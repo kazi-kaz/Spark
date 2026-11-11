@@ -5,7 +5,7 @@ root = Path(__file__).resolve().parents[1]
 source = (root / "Iridium/Views/LibraryView.swift").read_text()
 
 assert "isShowingLiveContainerRelaunchRequired" in source
-assert '.alert("Restart Iridium"' in source
+assert '.alert("Restart Spark"' in source
 assert "launchStatus.launchWithJITEnabled != liveContainerStatus.launchWithJITEnabled" in source
 assert "liveContainerIntegrationMessage = nil" in source
 assert "liveContainerStatus.setupFeedback(" not in source

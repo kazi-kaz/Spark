@@ -80,7 +80,7 @@ BOOL IRHasDebugEntitlement(void) {
     self.helperPID = [self.extension pidForRequestIdentifier:self.request];
     __weak JITExtension *weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 15 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-        [weakSelf fail:@"The JIT helper did not connect. Check extension signing and restart Iridium."];
+        [weakSelf fail:@"The JIT helper did not connect. Check extension signing and restart Spark."];
     });
 }
 - (BOOL)listener:(NSXPCListener *)listener shouldAcceptNewConnection:(NSXPCConnection *)connection {
@@ -95,7 +95,7 @@ BOOL IRHasDebugEntitlement(void) {
         __weak JITExtension *weakSelf = self;
         void (^lost)(void) = ^{
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (weakSelf.failureHandler) weakSelf.failureHandler(@"The JIT helper connection ended. Restart Iridium before retrying.");
+                if (weakSelf.failureHandler) weakSelf.failureHandler(@"The JIT helper connection ended. Restart Spark before retrying.");
             });
         };
         connection.interruptionHandler = lost;

@@ -282,10 +282,10 @@ extension SteamLibraryModel {
         try await finish(signingIn)
         try check(signingIn.state.signedIn && FixtureKeychain.stored == nil, "Sign-in succeeds independently of storage")
         try check(SteamNativeWorker.secret == nil && SteamNativeWorker.handoffs == 1, "Native token handed off once")
-        try check(signingIn.error?.contains("Keep Iridium open") == true, "Failed persistence stays actionable")
+        try check(signingIn.error?.contains("Keep Spark open") == true, "Failed persistence stays actionable")
         signingIn.perform(["action": "library"])
         try await finish(signingIn)
-        try check(signingIn.error?.contains("Keep Iridium open") == true, "Other actions do not hide failed persistence")
+        try check(signingIn.error?.contains("Keep Spark open") == true, "Other actions do not hide failed persistence")
         FixtureKeychain.saveStatus = errSecSuccess
         signingIn.resumeForeground()
         try check(FixtureKeychain.stored == saved && SteamNativeWorker.handoffs == 1, "Retry saves retained token")
