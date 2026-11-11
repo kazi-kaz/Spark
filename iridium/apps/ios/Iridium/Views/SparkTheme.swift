@@ -50,3 +50,34 @@ struct SparkMark: View {
             .accessibilityHidden(true)
     }
 }
+
+/// A game's last run outcome as a small chip, readable over artwork.
+struct SparkStatusChip: View {
+    let status: SparkGameStatus
+
+    private var symbol: String {
+        switch status {
+        case .notRun: "circle"
+        case .ranAndClosed: "checkmark.circle.fill"
+        case .stopped: "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var tone: Color {
+        switch status {
+        case .notRun: .white.opacity(0.85)
+        case .ranAndClosed: SparkTheme.good
+        case .stopped: SparkTheme.problem
+        }
+    }
+
+    var body: some View {
+        Label(status.title, systemImage: symbol)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tone)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.black.opacity(0.6), in: Capsule())
+            .fixedSize()
+    }
+}

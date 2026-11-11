@@ -109,6 +109,7 @@ let package = Package(
                 "ExternalJITProviders.swift",
                 "JITBootstrapAssets.swift",
                 "LiveContainerIntegration.swift",
+                "SparkGameStatus.swift",
             ]
         ),
         .testTarget(
@@ -137,6 +138,7 @@ let package = Package(
                 "ExternalJITProviders.swift",
                 "JITBootstrapAssets.swift",
                 "LiveContainerIntegration.swift",
+                "SparkGameStatus.swift",
                 "Views",
             ],
             sources: ["RuntimeLogCapture.swift"]

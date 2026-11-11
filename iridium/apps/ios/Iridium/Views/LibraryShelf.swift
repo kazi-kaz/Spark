@@ -16,6 +16,7 @@ struct LibraryShelf: View {
     var importGame: () -> Void = {}
     var settings: () -> Void = {}
     var acceptsControllerInput = true
+    @ObservedObject var statuses = SparkGameStatusStore.shared
     @State private var visible = false
     private enum MenuFocus: Int { case filter, search, add, settings, play, options, covers }
     @State private var menuFocus: MenuFocus = .covers
@@ -177,6 +178,7 @@ struct LibraryShelf: View {
                                                         .clipShape(RoundedRectangle(cornerRadius: 18))
                                                         .padding(4)
                                                         .overlay { RoundedRectangle(cornerRadius: 22).stroke(game.id == selected.id && (!controller.showingControllerHints || menuFocus == .covers) ? .white : .clear, lineWidth: 3) }
+                                                        .overlay(alignment: .topLeading) { SparkStatusChip(status: statuses.status(for: game.id)).padding(14) }
                                                     if artwork.appearance(game.id).cover == nil {
                                                         Text(artwork.title(game)).font(.headline).lineLimit(1).truncationMode(.tail).padding(.horizontal, 5)
                                                     }
@@ -186,6 +188,7 @@ struct LibraryShelf: View {
                                                 .focusable(interactions: .edit)
 
                                                 .accessibilityLabel(artwork.title(game))
+                                                .accessibilityValue(statuses.status(for: game.id).title)
                                                 .accessibilityIdentifier(game.id == selected.id ? "selectedGameCover" : "gameCover-\(slot)")
                                                 .accessibilityAddTraits(game.id == selected.id ? [.isSelected] : [])
                                                 .accessibilityHint("Select game. Use Play to launch.")
@@ -348,6 +351,9 @@ struct LibraryShelf: View {
             }
             if showReason, let reason = launchDetail(game) {
                 Text(reason).font(.footnote).foregroundStyle(.secondary).lineLimit(landscape ? 1 : 2)
+            }
+            if showReason, launchDetail(game) == nil, let stopped = statuses.status(for: game.id).detail {
+                Text(stopped).font(.footnote).foregroundStyle(SparkTheme.problem).lineLimit(2)
             }
         }
     }

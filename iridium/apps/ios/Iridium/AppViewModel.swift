@@ -2300,6 +2300,9 @@ final class AppViewModel: ObservableObject {
                         self.activeRuntimePlayerSession?.statusSummary = message
                         self.activityStatusMessage = message
                         RuntimeLogCapture.writeLine("[Launch] \(message)")
+                        // Only a game that actually ran and exited badly marks the game;
+                        // launch preconditions (sync, JIT, restart needed) do not.
+                        if message.contains("exit code") { SparkGameStatusStore.shared.record(.stopped(message), for: game.id) }
                     } exited: { [weak self] in
                         guard let self, self.activeRuntimePlayerSession?.sessionIdentifier == id else { return }
                         let presented = madeira_frame_count() > 0
@@ -2310,6 +2313,7 @@ final class AppViewModel: ObservableObject {
                         self.activeRuntimePlayerSession?.statusSummary = message
                         self.activityStatusMessage = message
                         RuntimeLogCapture.writeLine("[Launch] \(message)")
+                        SparkGameStatusStore.shared.record(presented ? .ranAndClosed : .stopped("Exited before displaying a frame."), for: game.id)
                         if presented { SteamCloudCoordinator.shared.confirmedExit(game, model: self) }
                     }
                 })
