@@ -150,14 +150,14 @@ enum MadeiraSteamClient {
         if type == .typeDirectory {
             // Installed inside this game's environment; use it as it is.
             guard let name = steamExecutableName(in: target) else {
-                throw failure("\(windowsDirectory) in this game's environment has no steam.exe. Remove that folder to use Files > Iridium > SteamClient instead.")
+                throw failure("\(windowsDirectory) in this game's environment has no steam.exe. Remove that folder to use Files > Spark > SteamClient instead.")
             }
             executableName = name
             file = target.appendingPathComponent(name)
         } else {
             guard let client = locate(documents: documents), let name = steamExecutableName(in: client) else {
                 ensureFolder(documents: documents)
-                throw failure("Steam Client is on, but Files > Iridium > SteamClient has no steam.exe. Copy the Steam folder from a Windows PC there, or turn Steam Client off.")
+                throw failure("Steam Client is on, but Files > Spark > SteamClient has no steam.exe. Copy the Steam folder from a Windows PC there, or turn Steam Client off.")
             }
             if type == .typeSymbolicLink { try fm.removeItem(at: target) }   // this launch's link replaces the last one
             else if type != nil { throw failure("\(windowsDirectory) in this game's environment is not a folder.") }

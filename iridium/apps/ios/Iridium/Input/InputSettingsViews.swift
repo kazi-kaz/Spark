@@ -29,7 +29,7 @@ struct InputSettingsView: View {
             }
 
             Section("About Input") {
-                Text("Physical controllers use Iridium's XInput bridge by default. Each game can opt into keyboard and mouse mapping from Game Options → Controls or the player menu. On-screen controller layouts are also saved per game.")
+                Text("Physical controllers use Spark's XInput bridge by default. Each game can opt into keyboard and mouse mapping from Game Options → Controls or the player menu. On-screen controller layouts are also saved per game.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -162,7 +162,7 @@ struct GameInputSettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The layout will return to Iridium's default Xbox-style controller.")
+            Text("The layout will return to Spark's default Xbox-style controller.")
         }
     }
 

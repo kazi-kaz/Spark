@@ -12,12 +12,12 @@ struct BuiltinJITSettings: View {
 
     var body: some View {
         Section("Built-in JIT · Experimental") {
-            MenuToggle("Enable JIT inside Iridium", isOn: $enabled)
+            MenuToggle("Enable JIT inside Spark", isOn: $enabled)
                 .disabled(BuiltinJIT.isHosted)
             MenuButton("Import Pairing File") { choosingImport = true }
                 .disabled(importingPairing)
             Text(BuiltinJIT.isHosted
-                 ? "Use standalone Iridium for built-in JIT. External StikDebug remains available."
+                 ? "Use standalone Spark for built-in JIT. External StikDebug remains available."
                  : "Requires iOS 18, debugging permission, a pairing file, and connected LocalDevVPN.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -29,14 +29,14 @@ struct BuiltinJITSettings: View {
                     try JITPairingStore.live.prepareFilesFolder()
                 }.value
             } catch {
-                message = "Could not prepare the pairing file folder in Iridium."
+                message = "Could not prepare the pairing file folder in Spark."
             }
         }
         .onChange(of: importing) { _, _ in controller?.nativeMenuActive = importing || choosingImport }
         .onChange(of: choosingImport) { _, _ in controller?.nativeMenuActive = importing || choosingImport }
         .confirmationDialog("Import Pairing File", isPresented: $choosingImport) {
             Button("Choose File") { importing = true }
-            Button("Use File in Iridium Folder") { usePairingFileInFolder() }
+            Button("Use File in Spark Folder") { usePairingFileInFolder() }
         } message: {
             Text("In Files, copy your pairing file to \(pairingFolderLocation), then rename it pairingFile.plist.")
         }
@@ -66,6 +66,6 @@ struct BuiltinJITSettings: View {
 
     private var pairingFolderLocation: String {
         let device = UIDevice.current.userInterfaceIdiom == .pad ? "On My iPad" : "On My iPhone"
-        return "\(device) → Iridium → StikJIT"
+        return "\(device) → Spark → StikJIT"
     }
 }

@@ -18,7 +18,7 @@ import Foundation
             } fail: { failures.append($0) }
             precondition(failures.count == 1 && reports.isEmpty)
             precondition(!MadeiraRuntimeAdapter.started && NativeState.shared.startCount == 0)
-            precondition(failures[0].contains(scenario == "sync-restart" ? "Restart Iridium" : "finish saving"))
+            precondition(failures[0].contains(scenario == "sync-restart" ? "Restart Spark" : "finish saving"))
             _ = await save.value
             print("PASS \(scenario): sync setting guard runs before native/JIT state starts")
             return

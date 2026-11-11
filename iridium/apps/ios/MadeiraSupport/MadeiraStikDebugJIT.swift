@@ -28,7 +28,7 @@ enum MadeiraStikDebugJIT {
         UserDefaults.standard.set(true, forKey: persistentScriptRequestKey)
 
         guard let bundleID = Bundle.main.bundleIdentifier, !bundleID.isEmpty else {
-            finish(false, message: "Could not determine Iridium's bundle ID for StikDebug.")
+            finish(false, message: "Could not determine Spark's bundle ID for StikDebug.")
             return
         }
         guard let scriptURL = Bundle.main.url(forResource: "madeira-jit", withExtension: "js"),

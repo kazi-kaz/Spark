@@ -718,9 +718,9 @@ public struct FileSystemHostCapabilityProvider: HostCapabilityProvider {
             jitToolBootstrapRequired: baseRecord?.jitToolBootstrapRequired ?? false,
             jitToolBootstrapKind: baseRecord?.jitToolBootstrapKind,
             jitToolBootstrapSummary:
-                "Xcode is attached; Iridium will skip the unsafe execute probe but still requires the real runtime backend to pass under a non-Xcode debugger-backed session.",
+                "Xcode is attached; Spark will skip the unsafe execute probe but still requires the real runtime backend to pass under a non-Xcode debugger-backed session.",
             jitSummary:
-                "Debugger-backed JIT was detected under Xcode, but Iridium intentionally skipped embedded runtime validation. Direct launch stays blocked in this check mode.",
+                "Debugger-backed JIT was detected under Xcode, but Spark intentionally skipped embedded runtime validation. Direct launch stays blocked in this check mode.",
             exceptionPortsActive: false,
             presentationReadiness: baseRecord?.presentationReadiness,
             inputReadiness: baseRecord?.inputReadiness,

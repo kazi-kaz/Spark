@@ -91,7 +91,7 @@ enum MadeiraAutomaticExternalJIT {
                 } else if timedOut {
                     finish(
                         false,
-                        message: "Automatic JIT routes opened, but none attached JIT to Iridium."
+                        message: "Automatic JIT routes opened, but none attached JIT to Spark."
                     )
                 } else {
                     finish(false, message: MadeiraLiveContainer3JIT.lastFailure)

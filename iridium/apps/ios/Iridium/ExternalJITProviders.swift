@@ -69,45 +69,45 @@ enum ExternalJITProvider: String, Sendable, Equatable {
     var timeoutSummary: String {
         switch self {
         case .altJIT:
-            "AltServer request succeeded, but Iridium never observed runtime readiness."
+            "AltServer request succeeded, but Spark never observed runtime readiness."
         case .jitStreamer:
-            "JitStreamer attach endpoint succeeded, but Iridium never observed runtime readiness."
+            "JitStreamer attach endpoint succeeded, but Spark never observed runtime readiness."
         case .stikDebug:
-            "StikDebug launched, but Iridium never observed runtime readiness."
+            "StikDebug launched, but Spark never observed runtime readiness."
         case .sideStore:
-            "SideStore launched, but Iridium never observed runtime readiness."
+            "SideStore launched, but Spark never observed runtime readiness."
         case .trollStore:
-            "TrollStore launched, but Iridium never observed runtime readiness."
+            "TrollStore launched, but Spark never observed runtime readiness."
         }
     }
 
     var waitingNotice: String {
         switch self {
         case .altJIT:
-            "Iridium requested JIT through AltJIT and is waiting for runtime readiness."
+            "Spark requested JIT through AltJIT and is waiting for runtime readiness."
         case .jitStreamer:
-            "Iridium requested JIT through JitStreamer and is waiting for runtime readiness."
+            "Spark requested JIT through JitStreamer and is waiting for runtime readiness."
         case .stikDebug:
-            "Iridium opened StikDebug and is waiting for runtime readiness."
+            "Spark opened StikDebug and is waiting for runtime readiness."
         case .sideStore:
-            "Iridium opened SideStore and is waiting for runtime readiness."
+            "Spark opened SideStore and is waiting for runtime readiness."
         case .trollStore:
-            "Iridium opened TrollStore and is waiting for runtime readiness."
+            "Spark opened TrollStore and is waiting for runtime readiness."
         }
     }
 
     var attachMissingSummary: String {
         switch self {
         case .altJIT:
-            "Iridium requested JIT through AltJIT, but this app process still does not appear ready. Keep AltServer available, then check again."
+            "Spark requested JIT through AltJIT, but this app process still does not appear ready. Keep AltServer available, then check again."
         case .jitStreamer:
-            "Iridium requested JIT through JitStreamer, but this app process still does not appear ready. Keep JitStreamer reachable, then check again."
+            "Spark requested JIT through JitStreamer, but this app process still does not appear ready. Keep JitStreamer reachable, then check again."
         case .stikDebug:
-            "Iridium opened StikDebug, but this app process still does not appear ready. Finish the StikDebug JIT attach flow, then check again."
+            "Spark opened StikDebug, but this app process still does not appear ready. Finish the StikDebug JIT attach flow, then check again."
         case .sideStore:
-            "Iridium opened SideStore, but this app process still does not appear ready. Finish SideStore JIT enablement, then check again."
+            "Spark opened SideStore, but this app process still does not appear ready. Finish SideStore JIT enablement, then check again."
         case .trollStore:
-            "Iridium opened TrollStore, but this app process still does not appear ready. Finish TrollStore JIT enablement, then check again."
+            "Spark opened TrollStore, but this app process still does not appear ready. Finish TrollStore JIT enablement, then check again."
         }
     }
 }

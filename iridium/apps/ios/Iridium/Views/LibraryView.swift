@@ -88,10 +88,10 @@ struct LibraryView: View {
             if relocatingGame == nil { Button("Download from Steam", action: showDownloads) }
             Button("Choose Folder") { openImportPicker() }
             if !liveContainerStatus.isHosted {
-                Button("Find Games in Iridium Folder") { isPresentingGamesFolder = true }
+                Button("Find Games in Spark Folder") { isPresentingGamesFolder = true }
             }
         } message: {
-            Text("To use Files, place each game in \(filesDeviceLocation) → Iridium → Games.")
+            Text("To use Files, place each game in \(filesDeviceLocation) → Spark → Games.")
         }
         .fullScreenCover(isPresented: $isPresentingImportPicker) {
             GameImportDocumentPicker(
@@ -116,12 +116,12 @@ struct LibraryView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Iridium will enable LiveContainer's file-picker fixes, Launch with JIT, and install Iridium's persistent TXM script. Fully close and relaunch Iridium afterward.")
+            Text("Spark will enable LiveContainer's file-picker fixes, Launch with JIT, and install Spark's persistent TXM script. Fully close and relaunch Spark afterward.")
         }
-        .alert("Restart Iridium", isPresented: $isShowingLiveContainerRelaunchRequired) {
+        .alert("Restart Spark", isPresented: $isShowingLiveContainerRelaunchRequired) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("LiveContainer settings are repaired. Fully close Iridium, then reopen it from LiveContainer so the updated launch settings take effect.")
+            Text("LiveContainer settings are repaired. Fully close Spark, then reopen it from LiveContainer so the updated launch settings take effect.")
         }
         .onAppear { refreshLiveContainerSetup() }
         .onChange(of: scenePhase) { _, phase in
@@ -246,7 +246,7 @@ struct LibraryView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("Place each game in its own folder at \(filesDeviceLocation) → Iridium → Games. Your files stay there when you add a game.")
+                    Text("Place each game in its own folder at \(filesDeviceLocation) → Spark → Games. Your files stay there when you add a game.")
                         .foregroundStyle(.secondary)
                 }
                 if isLoadingFilesGames {
@@ -254,7 +254,7 @@ struct LibraryView: View {
                 } else if let filesGamesError {
                     Text(filesGamesError).foregroundStyle(.secondary)
                 } else if filesGameFolders.isEmpty {
-                    Text("No game folders yet. In Files, open \(filesDeviceLocation) → Iridium → Games, add a game folder, then tap Refresh.")
+                    Text("No game folders yet. In Files, open \(filesDeviceLocation) → Spark → Games, add a game folder, then tap Refresh.")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(filesGameFolders, id: \.self) { folder in
@@ -295,7 +295,7 @@ struct LibraryView: View {
         } catch {
             guard requestID == filesGamesRequestID, isPresentingGamesFolder else { return }
             filesGameFolders = []
-            filesGamesError = "Could not read Iridium's Games folder: \(error.localizedDescription)"
+            filesGamesError = "Could not read Spark's Games folder: \(error.localizedDescription)"
         }
         isLoadingFilesGames = false
     }

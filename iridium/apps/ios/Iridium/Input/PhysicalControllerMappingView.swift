@@ -49,7 +49,7 @@ struct PhysicalControllerMappingView: View {
                 }
                 Text("Shared bindings stay pressed until every source releases them. When several sticks move the mouse, the strongest stick controls its speed. On-screen controls keep their saved layout and controller behavior.")
                     .font(.footnote).foregroundStyle(.secondary)
-                Text("Menu / Start sends its game binding during play. Use the on-screen Player Menu to open Iridium's controls. In Iridium's menus and launch screen, Menu / Start follows the app's navigation instead.")
+                Text("Menu / Start sends its game binding during play. Use the on-screen Player Menu to open Spark's controls. In Spark's menus and launch screen, Menu / Start follows the app's navigation instead.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section {

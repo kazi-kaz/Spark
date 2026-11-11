@@ -29,14 +29,14 @@ enum RuntimeLaunchPresentation: Equatable {
         case .closing: "Closing game…"
         case .failed: "Couldn’t start the game"
         case .stopped: "Game stopped"
-        case .shutdownUnconfirmed: "Restart Iridium to continue"
+        case .shutdownUnconfirmed: "Restart Spark to continue"
         }
     }
     var message: String? {
         switch self {
         case .failed: "The game could not finish starting. Open Logs for details."
         case .stopped: "The game has ended. Your launch details are available in Logs."
-        case .shutdownUnconfirmed: "The runtime did not confirm that it stopped. Close and reopen Iridium before playing again."
+        case .shutdownUnconfirmed: "The runtime did not confirm that it stopped. Close and reopen Spark before playing again."
         default: nil
         }
     }

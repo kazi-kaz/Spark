@@ -51,7 +51,7 @@ enum MadeiraSteamDock {
     /// The game's iridium.cfg wins; otherwise the Settings mode. Only games Iridium
     /// downloaded from Steam qualify: Dock needs their App ID and download record.
     static func decision(gameConfig: URL?, executable: URL, mode: Mode, steamDownload: Bool) -> Decision {
-        guard steamDownload else { return .off("the game was not downloaded from Steam in Iridium") }
+        guard steamDownload else { return .off("the game was not downloaded from Steam in Spark") }
         if let gameConfig, let value = MadeiraGameConfig.value(configKey, in: gameConfig)?.lowercased() {
             let name = gameConfig.lastPathComponent
             if ["on", "1", "yes", "true"].contains(value) { return .on("\(name) sets \(configKey) = on") }
@@ -357,7 +357,7 @@ enum MadeiraSteamDock {
         switch (try? fm.attributesOfItem(atPath: link.path))?[.type] as? FileAttributeType {
         case .typeSymbolicLink?: try fm.removeItem(at: link)
         case nil: break
-        default: throw Failure("steamapps\\common\\\(folder) in this game's environment is a real folder. Iridium links the game copy there; move that folder away first.")
+        default: throw Failure("steamapps\\common\\\(folder) in this game's environment is a real folder. Spark links the game copy there; move that folder away first.")
         }
         // drive_c/Program Files (x86)/Steam/steamapps/common/<folder> -> drive_c/IridiumGame
         try fm.createSymbolicLink(atPath: link.path, withDestinationPath: "../../../../IridiumGame")
@@ -491,7 +491,7 @@ enum MadeiraSteamDock {
               secret.allSatisfy({ (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0) || [45, 46, 95].contains($0) }),
               steamID >> 56 == 1, (steamID >> 52) & 15 == 1, (steamID >> 32) & 0xfffff == 1,
               steamID & 0xffffffff != 0, validAppID(appID) else {
-            throw Failure("Your Steam sign-in cannot be handed to Madeira Dock. Sign out of Steam in Iridium and sign in again.")
+            throw Failure("Your Steam sign-in cannot be handed to Madeira Dock. Sign out of Steam in Spark and sign in again.")
         }
         var data = Data("MDOCK001".utf8)
         func append(_ value: UInt64, bytes: Int) {
@@ -506,7 +506,7 @@ enum MadeiraSteamDock {
     /// The refresh token's JWT subject selects the account. It is not treated as
     /// authenticated identity; only Valve accepting the token establishes that.
     static func subject(_ token: String) throws -> UInt64 {
-        let renew = Failure("Your Steam sign-in needs renewal. Sign out of Steam in Iridium and sign in again.")
+        let renew = Failure("Your Steam sign-in needs renewal. Sign out of Steam in Spark and sign in again.")
         guard token.utf8.count <= 8192 else { throw renew }
         let parts = token.split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count == 3 else { throw renew }
@@ -556,7 +556,7 @@ enum MadeiraSteamDock {
         var values = URLResourceValues(); values.isExcludedFromBackup = true
         try folder.setResourceValues(values)
         let descriptor = open(url.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0o600)
-        guard descriptor >= 0 else { throw Failure("Iridium could not create Madeira Dock's private sign-in transfer.") }
+        guard descriptor >= 0 else { throw Failure("Spark could not create Madeira Dock's private sign-in transfer.") }
         let file = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
         do {
             if !protection.isEmpty { try fm.setAttributes(protection, ofItemAtPath: url.path) }
@@ -649,13 +649,13 @@ enum MadeiraSteamDock {
         var failure: String? {
             guard let result, result != 0 else { return nil }
             if fields["another-client-or-process-query-error"] == "1" {
-                return "Another Steam client is running in this game's environment. Restart Iridium and try again."
+                return "Another Steam client is running in this game's environment. Restart Spark and try again."
             }
             if fields["client-file-or-identity-error"] != nil, fields["client-sha256"] == nil {
                 return "Madeira Dock could not open Valve's Steam client in this game's environment. Download the Steam components again in Settings."
             }
             if fields["launch-install-directory-mismatch"] == "1" {
-                return "Steam reports a different install folder for this game than Iridium prepared. Export the log before trying again."
+                return "Steam reports a different install folder for this game than Spark prepared. Export the log before trying again."
             }
             if result == 30 {
                 if fields["session-unsupported-client"] == "1" || fields["session-user-method-mismatch"] != nil {
@@ -668,7 +668,7 @@ enum MadeiraSteamDock {
             if result == 34 {
                 return fields["session-authenticated-online"] == "1"
                     ? "Steam signed in but did not confirm this game's license in time. Export the log before trying again."
-                    : "Steam did not finish signing in. Check the connection and try again. If it keeps failing, sign out of Steam in Iridium and sign in again."
+                    : "Steam did not finish signing in. Check the connection and try again. If it keeps failing, sign out of Steam in Spark and sign in again."
             }
             if result == 35 { return "Steam did not confirm a license for this game on the signed-in account." }
             if result == 50 {
@@ -680,7 +680,7 @@ enum MadeiraSteamDock {
             if result == 52 { return "Steam signed in offline, but what it has saved does not list this game. Start this game once while online." }
             if result == 37 {
                 if fields["session-native-handoff-app-mismatch"] == "1" {
-                    return "Madeira Dock received a sign-in transfer for a different launch. Restart Iridium and try again."
+                    return "Madeira Dock received a sign-in transfer for a different launch. Restart Spark and try again."
                 }
                 return "Madeira Dock could not read the one-use Steam sign-in transfer. Steam has not checked the login yet. Export the log before trying again."
             }

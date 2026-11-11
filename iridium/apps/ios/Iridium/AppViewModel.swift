@@ -415,13 +415,13 @@ enum JITEnablementState: String, Sendable {
             case .altJITUnavailable:
                 return "AltJIT is unavailable in this build."
             case .missingBundleIdentifier:
-                return "Iridium could not determine its bundle identifier for JIT enablement."
+                return "Spark could not determine its bundle identifier for JIT enablement."
             case .missingJitStreamerAddress:
                 return "Set a JitStreamer address before requesting JIT through JitStreamer."
             case .invalidJitStreamerAddress(let value):
                 return "Invalid JitStreamer address: \(value)"
             case .failedToOpen(let provider):
-                return "Iridium could not open \(provider.displayName)."
+                return "Spark could not open \(provider.displayName)."
             case .jitStreamerRejected(let message):
                 return "JitStreamer rejected the attach request: \(message)"
             case .jitStreamerNetworkFailure(let message):
@@ -1010,10 +1010,10 @@ final class AppViewModel: ObservableObject {
                 guard self.activeRuntimePlayerSession?.sessionIdentifier == id else { return }
                 if confirmed {
                     self.releaseRuntimePlayerReservation(sessionIdentifier: id)
-                    self.activityStatusMessage = "Game stopped. Restart Iridium before another session."
+                    self.activityStatusMessage = "Game stopped. Restart Spark before another session."
                 } else {
                     self.madeiraShutdownUnconfirmed = true
-                    let message = "Shutdown was not confirmed. The player remains open. Use the game's Quit option, or restart Iridium."
+                    let message = "Shutdown was not confirmed. The player remains open. Use the game's Quit option, or restart Spark."
                     self.activeRuntimePlayerSession?.statusSummary = message
                     self.activityStatusMessage = message
                     RuntimeLogCapture.writeLine("[Launch] \(message)")
@@ -1034,13 +1034,13 @@ final class AppViewModel: ObservableObject {
         #if MADEIRA_RUNTIME
         if MadeiraRuntimeAdapter.enabled {
             UserDefaults.standard.removeObject(forKey: "IridiumPendingMadeiraLaunchTitle")
-            activityStatusMessage = "Game player closed. Restart Iridium before starting another game."
+            activityStatusMessage = "Game player closed. Restart Spark before starting another game."
             return
         }
         #endif
         if let sessionTitle {
             activityStatusMessage =
-                "Dismissed the fullscreen runtime player for \(sessionTitle). Iridium will keep monitoring terminal completion in the background."
+                "Dismissed the fullscreen runtime player for \(sessionTitle). Spark will keep monitoring terminal completion in the background."
         }
 
         Task {
@@ -1885,7 +1885,7 @@ final class AppViewModel: ObservableObject {
             }
 
             return runtimeReadyForLaunch
-                ? "JIT and the embedded launch bootstrap are ready. Iridium is resuming queued launches now."
+                ? "JIT and the embedded launch bootstrap are ready. Spark is resuming queued launches now."
                 : queuedSummary
         }
 
@@ -1907,7 +1907,7 @@ final class AppViewModel: ObservableObject {
             return helperBootstrapIncompleteSummary()
                 ?? hostCapabilities.jitSummary
                 ?? hostCapabilities.launchStatusSummary
-                ?? "JIT was requested, but Iridium still did not observe runtime readiness."
+                ?? "JIT was requested, but Spark still did not observe runtime readiness."
         }
 
         if jitEnablementState == .bootstrapRequired {
@@ -1926,18 +1926,18 @@ final class AppViewModel: ObservableObject {
 
         if let toolName = recommendedJITToolDisplayName {
             return
-                "Iridium can open \(toolName) for this app process, or you can enable JIT externally and then check again."
+                "Spark can open \(toolName) for this app process, or you can enable JIT externally and then check again."
         }
 
         #if os(iOS)
             if JITPlatformCompatibility.requiresPersistentDebuggerCallback {
                 return
-                    "This device requires StikDebug 3.1.6 or newer with Iridium's persistent TXM callback. Install StikDebug, then return here to enable JIT."
+                    "This device requires StikDebug 3.1.6 or newer with Spark's persistent TXM callback. Install StikDebug, then return here to enable JIT."
             }
         #endif
 
         return
-            "Iridium is ready for imports and prefix management, but Windows game launching stays disabled until this app process is launched under a trusted external debugger/JIT session."
+            "Spark is ready for imports and prefix management, but Windows game launching stays disabled until this app process is launched under a trusted external debugger/JIT session."
     }
 
     #if MADEIRA_RUNTIME
@@ -1969,7 +1969,7 @@ final class AppViewModel: ObservableObject {
             return .failure(.init("Madeira Dock needs Valve's Steam client components (about \(MadeiraSteamDock.downloadBytes / 1_000_000) MB, downloaded once). Download them in Settings › Runtime › Steam Games, then tap Play again."))
         }
         guard let credential = SteamLibraryModel.shared.dockCredential() else {
-            return .failure(.init("Sign in to Steam in Iridium first. Madeira Dock starts the game with that Steam account."))
+            return .failure(.init("Sign in to Steam in Spark first. Madeira Dock starts the game with that Steam account."))
         }
         guard !SteamLibraryModel.shared.busy else {
             return .failure(.init("Wait for the current Steam download or sign-in to finish, then tap Play again."))
@@ -1994,7 +1994,7 @@ final class AppViewModel: ObservableObject {
         if MadeiraRuntimeAdapter.enabled {
             if activeRuntimePlayerSession?.gameID == game.id { return "Player Open" }
             if runtimePlayerReservation?.gameID == game.id { return "Preparing…" }
-            if MadeiraRuntimeAdapter.started { return "Restart Iridium to Play" }
+            if MadeiraRuntimeAdapter.started { return "Restart Spark to Play" }
             return "Play"
         }
         #endif
@@ -2044,7 +2044,7 @@ final class AppViewModel: ObservableObject {
         }
         #if MADEIRA_RUNTIME
         if MadeiraRuntimeAdapter.enabled {
-            return madeiraLaunchIssue(for: game) ?? "Launch this game. Iridium will request JIT through LiveContainer2 if needed."
+            return madeiraLaunchIssue(for: game) ?? "Launch this game. Spark will request JIT through LiveContainer2 if needed."
         }
         #endif
         let session = launchSession(for: game)
@@ -2059,7 +2059,7 @@ final class AppViewModel: ObservableObject {
         }
 
         if canPrepareRuntimePlayer(for: game, session: session) {
-            return "Iridium can arm the fullscreen player services, refresh live host readiness, and launch once presentation, input, and audio are bound to this session."
+            return "Spark can arm the fullscreen player services, refresh live host readiness, and launch once presentation, input, and audio are bound to this session."
         }
 
         if canLaunchWithRuntimeValidationWarning(session: session, report: readinessReport(for: game)) {
@@ -2070,7 +2070,7 @@ final class AppViewModel: ObservableObject {
         case .blockedByJIT:
             if canQueueLaunchAfterJIT(for: game) {
                 return
-                    "Iridium will save this launch request, keep watching for JIT readiness, and continue automatically once JIT is enabled."
+                    "Spark will save this launch request, keep watching for JIT readiness, and continue automatically once JIT is enabled."
             }
 
             if jitStatus == .unavailable {
@@ -2093,7 +2093,7 @@ final class AppViewModel: ObservableObject {
             #endif
 
             return
-                "Enable JIT for this Iridium app process with AltJIT, JitStreamer, SideStore, or a private-JIT path, then retry direct launch after the remaining launch checks pass."
+                "Enable JIT for this Spark app process with AltJIT, JitStreamer, SideStore, or a private-JIT path, then retry direct launch after the remaining launch checks pass."
         case .blockedByPolicy, .needsRuntimeValidation, .missingExecutable:
             return session.issues.first(where: { $0.severity == .blocking })?.message
                 ?? readinessReport(for: game).summary
@@ -2306,7 +2306,7 @@ final class AppViewModel: ObservableObject {
                         self.madeiraShutdownUnconfirmed = false
                         self.activeRuntimePlayerSession?.state = presented ? .completed : .failed
                         self.activeRuntimePlayerSession?.stateHistory.append(presented ? .completed : .failed)
-                        let message = presented ? "The game stopped. Restart Iridium before another session." : "The game exited before displaying a frame. Restart Iridium before retrying."
+                        let message = presented ? "The game stopped. Restart Spark before another session." : "The game exited before displaying a frame. Restart Spark before retrying."
                         self.activeRuntimePlayerSession?.statusSummary = message
                         self.activityStatusMessage = message
                         RuntimeLogCapture.writeLine("[Launch] \(message)")
@@ -2353,7 +2353,7 @@ final class AppViewModel: ObservableObject {
                 let now = Date()
                 let launchEntryID = UUID()
                 let queuedDetail =
-                    "Launch is queued while Iridium waits for JIT. The app will continue automatically after JIT is enabled and the launch stays valid."
+                    "Launch is queued while Spark waits for JIT. The app will continue automatically after JIT is enabled and the launch stays valid."
                 let pendingLaunch = PendingLaunchRecord(
                     launchEntryID: launchEntryID,
                     gameID: currentGame.id,
@@ -2393,7 +2393,7 @@ final class AppViewModel: ObservableObject {
                 )
                 await store.queueLaunchWaitingForJIT(pendingLaunch, launchEntry: launchRecord)
                 activityStatusMessage =
-                    "Queued direct launch for \(currentGame.title). Enable JIT externally and Iridium will resume it automatically."
+                    "Queued direct launch for \(currentGame.title). Enable JIT externally and Spark will resume it automatically."
                 await refresh()
                 return
             }
@@ -2703,7 +2703,7 @@ final class AppViewModel: ObservableObject {
         }
 
         let resumeDetail =
-            "JIT became available and Iridium resumed the queued launch automatically."
+            "JIT became available and Spark resumed the queued launch automatically."
         await store.markPendingLaunchResumed(
             id: pendingLaunch.id, detail: resumeDetail, resumedAt: Date())
         let launchRecord = LaunchHistoryEntry(
@@ -3413,7 +3413,7 @@ final class AppViewModel: ObservableObject {
                 runtimeName: "Madeira", runtimeBundleIdentifier: "madeira-experimental",
                 notes: [madeiraRuntimeAvailable
                     ? "Bundled runtime available. Each game is checked when you launch it."
-                    : "The bundled runtime is incomplete. Reinstall Iridium."]
+                    : "The bundled runtime is incomplete. Reinstall Spark."]
             )
         }
         #endif
@@ -3481,7 +3481,7 @@ final class AppViewModel: ObservableObject {
             return GamePresentationStatus(
                 title: "Queued For JIT",
                 summary:
-                    "Iridium saved this launch request and will resume it automatically once JIT becomes available.",
+                    "Spark saved this launch request and will resume it automatically once JIT becomes available.",
                 tone: .warning
             )
         }
@@ -3536,7 +3536,7 @@ final class AppViewModel: ObservableObject {
             if pendingLaunch(for: game) != nil {
                 return (
                     game, .warning,
-                    "Queued for JIT. Iridium will resume this launch automatically once JIT becomes available.",
+                    "Queued for JIT. Spark will resume this launch automatically once JIT becomes available.",
                     Date()
                 )
             }
@@ -3623,7 +3623,7 @@ final class AppViewModel: ObservableObject {
     var runtimeConstraintNotes: [String] {
         #if MADEIRA_RUNTIME
         if MadeiraRuntimeAdapter.enabled {
-            return ["Restart Iridium between game sessions.", "Game compatibility, audio, and input require testing for each title."]
+            return ["Restart Spark between game sessions.", "Game compatibility, audio, and input require testing for each title."]
         }
         #endif
         let subsystemSummaries = Set(hostCapabilities.playabilityBlockingSummaries)
@@ -3677,13 +3677,13 @@ final class AppViewModel: ObservableObject {
                 detail: {
                     if hostCapabilities.launchStatus == "xcodeDebugCheckOnly" {
                         return
-                            "Debugger-backed JIT was detected under Xcode, but Iridium intentionally skipped embedded runtime validation. Direct launch remains blocked in this lightweight check mode."
+                            "Debugger-backed JIT was detected under Xcode, but Spark intentionally skipped embedded runtime validation. Direct launch remains blocked in this lightweight check mode."
                     }
 
                     if jitStatus == .ready, hostCapabilities.launchReady == true {
                         return pendingLaunches.isEmpty
                             ? "Translation is enabled. Imported Windows games can launch when the other runtime checks pass."
-                            : "Translation is enabled and Iridium is resuming queued launches automatically."
+                            : "Translation is enabled and Spark is resuming queued launches automatically."
                     }
 
                     if jitStatus == .ready {
@@ -3693,7 +3693,7 @@ final class AppViewModel: ObservableObject {
 
                     if pendingLaunches.isEmpty {
                         return
-                            "Iridium can import and manage games now, but launching stays disabled until JIT is enabled externally."
+                            "Spark can import and manage games now, but launching stays disabled until JIT is enabled externally."
                     }
 
                     return
@@ -4017,7 +4017,7 @@ final class AppViewModel: ObservableObject {
     func checkedJITSummary(at checkedAt: String, status: JITStatus) -> String {
         if hostCapabilities.launchStatus == "xcodeDebugCheckOnly" {
             return
-                "Checked at \(checkedAt). Debugger-backed JIT was detected under Xcode, but Iridium intentionally skipped embedded runtime validation. Direct launch stays blocked in this check mode."
+                "Checked at \(checkedAt). Debugger-backed JIT was detected under Xcode, but Spark intentionally skipped embedded runtime validation. Direct launch stays blocked in this check mode."
         }
 
         switch status {
@@ -4045,7 +4045,7 @@ final class AppViewModel: ObservableObject {
             #if os(iOS)
                 if JITPlatformCompatibility.requiresPersistentDebuggerCallback {
                     return
-                        "Checked at \(checkedAt). This device requires StikDebug 3.1.6 or newer with Iridium's persistent TXM callback."
+                        "Checked at \(checkedAt). This device requires StikDebug 3.1.6 or newer with Spark's persistent TXM callback."
                 }
             #endif
             return
@@ -4060,7 +4060,7 @@ final class AppViewModel: ObservableObject {
             let detail =
                 hostCapabilities.jitSummary
                 ?? hostCapabilities.launchStatusSummary
-                ?? "Iridium still did not observe runtime readiness after JIT enablement."
+                ?? "Spark still did not observe runtime readiness after JIT enablement."
             return "Checked at \(checkedAt). \(detail)"
         }
     }
@@ -4100,7 +4100,7 @@ final class AppViewModel: ObservableObject {
             ?? hostCapabilities.jitSummary
             ?? hostCapabilities.launchStatusSummary
             ?? (pendingExternalJITProvider?.timeoutSummary
-                ?? "JIT was requested, but Iridium still did not observe runtime readiness.")
+                ?? "JIT was requested, but Spark still did not observe runtime readiness.")
 
         if let checkedAt {
             return "Checked at \(checkedAt). \(detail)"
@@ -4118,9 +4118,9 @@ final class AppViewModel: ObservableObject {
             }
             let integrationStatus = LiveContainerIntegration.currentStatus()
             if integrationStatus.jitConfigured {
-                return "LiveContainer's JIT settings are configured, but this process does not have Iridium's persistent TXM callback. Fully close Iridium, then relaunch it from LiveContainer."
+                return "LiveContainer's JIT settings are configured, but this process does not have Spark's persistent TXM callback. Fully close Spark, then relaunch it from LiveContainer."
             }
-            return "LiveContainer must launch Iridium with JIT and Iridium's persistent TXM script. Repair the LiveContainer setup below, fully close Iridium, then relaunch it from LiveContainer."
+            return "LiveContainer must launch Spark with JIT and Spark's persistent TXM script. Repair the LiveContainer setup below, fully close Spark, then relaunch it from LiveContainer."
         #else
             return nil
         #endif

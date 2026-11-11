@@ -49,7 +49,7 @@ struct SteamLibraryView: View {
             }
             Button("Keep Files", role: .cancel) { deleting = nil }
         } message: {
-            Text("This removes the selected Steam copy and its library entry. Iridium keeps separate Windows profile saves. Files saved inside the game folder will be deleted.")
+            Text("This removes the selected Steam copy and its library entry. Spark keeps separate Windows profile saves. Files saved inside the game folder will be deleted.")
         }
     }
 
@@ -205,7 +205,7 @@ struct SteamLibraryView: View {
                     .accessibilityLabel("Steam sign-in QR code. Scan using Steam Mobile on another device.")
             }
         } footer: {
-            Text("Your password is not saved. Iridium keeps your sign-in on this device.")
+            Text("Your password is not saved. Spark keeps your sign-in on this device.")
         }.modifier(SteamPanel())
     }
 
@@ -231,7 +231,7 @@ struct SteamLibraryView: View {
                 Text("Sign in to see your Steam library.").foregroundStyle(.secondary)
             }
         } header: { Text(steam.state.signedIn ? "Games · \(steam.state.games.count)" : "Games") }
-        footer: { Text("After a download finishes, add it to your Iridium library.") }
+        footer: { Text("After a download finishes, add it to your Spark library.") }
         .modifier(SteamPanel())
     }
 
@@ -292,8 +292,8 @@ struct SteamLibraryView: View {
         } header: { Text("Downloads · \(steam.pendingCount)") }
         footer: {
             Text(LiveContainerIntegration.isHosted()
-                ? "Keep Iridium open in LiveContainer. Downloads pause when you leave; guest Live Activities are unavailable."
-                : "Prepared batches can transfer on Wi-Fi in the background. iOS decides when verification and the next batch can run. If progress stops or the app is closed, reopen Iridium and resume. The Live Activity shows the last observed verified progress.")
+                ? "Keep Spark open in LiveContainer. Downloads pause when you leave; guest Live Activities are unavailable."
+                : "Prepared batches can transfer on Wi-Fi in the background. iOS decides when verification and the next batch can run. If progress stops or the app is closed, reopen Spark and resume. The Live Activity shows the last observed verified progress.")
         }
         .modifier(SteamPanel())
     }

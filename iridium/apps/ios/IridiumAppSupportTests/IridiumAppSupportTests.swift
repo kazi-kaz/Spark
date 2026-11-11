@@ -1004,7 +1004,7 @@ final class IridiumAppSupportTests: XCTestCase {
 
     func testBackendUnavailableStateUsesHostSummaryAfterExternalJITRequest() throws {
         let fixture = try makeGameFixture(title: "JIT Request Timed Out")
-        let summary = "JitStreamer attach endpoint succeeded, but Iridium never observed runtime readiness."
+        let summary = "JitStreamer attach endpoint succeeded, but Spark never observed runtime readiness."
         let viewModel = AppViewModel.makeForTesting(
             managedRootURL: fixture.root,
             jitStatus: .unavailable,
@@ -1063,11 +1063,11 @@ final class IridiumAppSupportTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.jitLaunchNotice,
-            "Iridium requested JIT through AltJIT, but this app process still does not appear ready. Keep AltServer available, then check again."
+            "Spark requested JIT through AltJIT, but this app process still does not appear ready. Keep AltServer available, then check again."
         )
         XCTAssertEqual(
             viewModel.checkedJITSummary(at: "9:41 PM", status: JITStatus.required),
-            "Checked at 9:41 PM. Iridium requested JIT through AltJIT, but this app process still does not appear ready. Keep AltServer available, then check again."
+            "Checked at 9:41 PM. Spark requested JIT through AltJIT, but this app process still does not appear ready. Keep AltServer available, then check again."
         )
     }
 
@@ -1658,7 +1658,7 @@ private func makePendingLaunch(for game: GameRecord) -> PendingLaunchRecord {
         resolvedPolicySummary: "Queued for JIT.",
         status: .waitingForJIT,
         detail:
-            "Iridium saved this launch request and will resume it automatically once JIT becomes available."
+            "Spark saved this launch request and will resume it automatically once JIT becomes available."
     )
 }
 

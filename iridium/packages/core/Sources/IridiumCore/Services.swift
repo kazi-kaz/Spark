@@ -2247,7 +2247,7 @@ public actor IridiumStore: GameLibraryService, SteamService, RuntimeService {
             let data = try encoder.encode(snapshot)
             try data.write(to: snapshotURL, options: .atomic)
         } catch {
-            assertionFailure("Failed to persist Iridium snapshot: \(error)")
+            assertionFailure("Failed to persist Spark snapshot: \(error)")
         }
     }
 

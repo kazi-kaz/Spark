@@ -176,7 +176,7 @@ private struct LaunchSupportSettingsView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("JIT lets Iridium translate Windows game code. Follow the setup steps to enable it.")
+                        Text("JIT lets Spark translate Windows game code. Follow the setup steps to enable it.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -527,7 +527,7 @@ private struct RuntimeLaunchPreferences: View {
                         }
                     }
                 }
-                Text("Iridium can use a smaller pool when memory is limited. Some games need more code memory.")
+                Text("Spark can use a smaller pool when memory is limited. Some games need more code memory.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("Debug Trace") {
@@ -583,10 +583,10 @@ private struct RuntimeLaunchPreferences: View {
                     }
                 }
                 Text(MadeiraSteamClient.locate() == nil
-                     ? "No Steam client found. Copy the Steam folder from a Windows PC into Files › Iridium › SteamClient."
-                     : "Steam client found in Files › Iridium › SteamClient.")
+                     ? "No Steam client found. Copy the Steam folder from a Windows PC into Files › Spark › SteamClient."
+                     : "Steam client found in Files › Spark › SteamClient.")
                     .font(.footnote).foregroundStyle(.secondary)
-                Text("Starts your own Steam before a game protected by Steam DRM, waits for you to sign in, then starts the game. Other games launch as before. steam-client = on or off in a game's iridium.cfg overrides this for that game. For games downloaded in Iridium, Madeira Dock (Settings › Runtime › Steam Games) is used instead when it is on: it needs no Steam window and far less memory.")
+                Text("Starts your own Steam before a game protected by Steam DRM, waits for you to sign in, then starts the game. Other games launch as before. steam-client = on or off in a game's iridium.cfg overrides this for that game. For games downloaded in Spark, Madeira Dock (Settings › Runtime › Steam Games) is used instead when it is on: it needs no Steam window and far less memory.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }

@@ -62,7 +62,7 @@ final class JITRequestHandler: NSObject, NSExtensionRequestHandling, JITWorker {
                 host?.finished(nil)
             } catch {
                 // Framework errors can include pairing paths and protocol responses. Keep them in the helper.
-                host?.finished("Built-in JIT failed. Check LocalDevVPN and the pairing file. Restart Iridium before retrying.")
+                host?.finished("Built-in JIT failed. Check LocalDevVPN and the pairing file. Restart Spark before retrying.")
             }
         }
     }

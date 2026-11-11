@@ -258,7 +258,7 @@ final class IridiumCoreTests: XCTestCase {
             runtimeBundleVersion: "2026.03.20",
             resolvedPolicySummary: "generic-broad-catalog, balanced",
             status: .waitingForJIT,
-            detail: "Launch is queued while Iridium waits for JIT.",
+            detail: "Launch is queued while Spark waits for JIT.",
             requestedAt: requestedAt,
             lastUpdatedAt: requestedAt
         )
@@ -313,7 +313,7 @@ final class IridiumCoreTests: XCTestCase {
             runtimeBundleVersion: "2026.03.20",
             resolvedPolicySummary: "generic-broad-catalog, balanced",
             status: .waitingForJIT,
-            detail: "Launch is queued while Iridium waits for JIT.",
+            detail: "Launch is queued while Spark waits for JIT.",
             requestedAt: queuedAt,
             lastUpdatedAt: queuedAt
         )
@@ -336,7 +336,7 @@ final class IridiumCoreTests: XCTestCase {
         await store.queueLaunchWaitingForJIT(firstPending, launchEntry: firstLaunch)
         await store.markPendingLaunchResumed(
             id: firstPendingID,
-            detail: "JIT became available and Iridium resumed the queued launch automatically.",
+            detail: "JIT became available and Spark resumed the queued launch automatically.",
             resumedAt: queuedAt.addingTimeInterval(30)
         )
 
@@ -367,7 +367,7 @@ final class IridiumCoreTests: XCTestCase {
             runtimeBundleVersion: "2026.03.20",
             resolvedPolicySummary: "generic-broad-catalog, balanced",
             status: .waitingForJIT,
-            detail: "Launch is queued while Iridium waits for JIT.",
+            detail: "Launch is queued while Spark waits for JIT.",
             requestedAt: queuedAt,
             lastUpdatedAt: queuedAt
         )

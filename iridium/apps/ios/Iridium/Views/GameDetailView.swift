@@ -50,7 +50,7 @@ struct GameDetailView: View {
                     MenuButton("Refresh Game Copy", systemImage: "arrow.clockwise") { confirmRefresh = true }
                         .disabled(viewModel.refreshingGameCopy || viewModel.isLaunchActionDisabled(for: game))
                 } footer: {
-                    Text("Refreshes the isolated runtime copy from the imported files. The current copy is kept as a backup. Restart Iridium before refreshing after a game session.")
+                    Text("Refreshes the isolated runtime copy from the imported files. The current copy is kept as a backup. Restart Spark before refreshing after a game session.")
                 }
             }
             if viewModel.isLaunchActionDisabled(for: game) && !viewModel.preparingInstaller {
@@ -61,7 +61,7 @@ struct GameDetailView: View {
                     }
                     if !FileManager.default.fileExists(atPath: game.launchProfile.executablePath) {
                         MenuButton("Locate Game Folder", action: locate)
-                        Text("Choose the folder containing this game and its executable. Iridium copies it to a new location and keeps your existing saves.").font(.footnote)
+                        Text("Choose the folder containing this game and its executable. Spark copies it to a new location and keeps your existing saves.").font(.footnote)
                     }
                     MenuButton("Check Game Files") { viewModel.verifyGameRegistration(game) }
                 }

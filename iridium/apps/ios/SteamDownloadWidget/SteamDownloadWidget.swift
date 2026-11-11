@@ -54,7 +54,7 @@ struct SteamDownloadViewData {
     }
     var phaseLabel: String { presentation.statusLabel }
     var spokenSummary: String {
-        let phase = presentation.isStale ? "Open Iridium to refresh download status" : state.label
+        let phase = presentation.isStale ? "Open Spark to refresh download status" : state.label
         let rate = presentation.receivedRateSummary.map { " Last observed received rate: \($0)." } ?? ""
         return "\(attributes.gameName). \(phase). \(presentation.verifiedSummary).\(rate)"
     }

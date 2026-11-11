@@ -94,7 +94,7 @@ struct TouchControllerOverlay: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("On-screen controller")
-        .accessibilityHint("Use the right-edge Player Menu handle to open Iridium controls")
+        .accessibilityHint("Use the right-edge Player Menu handle to open Spark controls")
     }
 }
 

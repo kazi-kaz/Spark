@@ -301,7 +301,8 @@ struct LibraryShelf: View {
     private func header(landscape: Bool) -> some View {
         VStack(spacing: 12) {
             HStack(spacing: 16) {
-                Text("Iridium").font(landscape ? .title2.bold() : .title.bold())
+                Text("Spark").font(landscape ? .title2.bold() : .title.bold())
+                SparkMark(size: landscape ? 20 : 24).padding(.leading, -10)
                 if landscape { libraryFilter.frame(minWidth: 180, maxWidth: 300) }
                 Spacer(minLength: 8)
                 Button { menuFocus = .search; searchPresented.toggle(); searching = searchPresented } label: {

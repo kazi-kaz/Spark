@@ -27,10 +27,10 @@ import SwiftUI
             }
             Text("Fastsync is the default. Madsync is an alternative for games with synchronization problems. Wine standard sync uses the server for synchronization. Compatibility varies by game.")
                 .font(.footnote).foregroundStyle(.secondary)
-            Text("This is the saved selection. Close Iridium from the app switcher and reopen it after changing modes. Sessions that run prerequisite installers can use Wine standard sync.")
+            Text("This is the saved selection. Close Spark from the app switcher and reopen it after changing modes. Sessions that run prerequisite installers can use Wine standard sync.")
                 .font(.footnote).foregroundStyle(.secondary)
             if let snapshot, let startup, snapshot.requiresRestart(from: startup) {
-                Label("Restart Iridium to use the saved mode", systemImage: "arrow.clockwise")
+                Label("Restart Spark to use the saved mode", systemImage: "arrow.clockwise")
                     .foregroundStyle(.orange)
             }
         }

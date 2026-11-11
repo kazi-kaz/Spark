@@ -130,7 +130,7 @@ private actor SteamNativeWorker {
 }
 
 private struct SteamKeychainError: LocalizedError {
-    static let saveMessage = "Steam sign-in could not be saved. Keep Iridium open, unlock the device, then return to Steam to retry."
+    static let saveMessage = "Steam sign-in could not be saved. Keep Spark open, unlock the device, then return to Steam to retry."
     enum Operation: String { case save, load, clear }
     let operation: Operation
     let status: OSStatus
@@ -659,7 +659,7 @@ final class SteamLibraryModel: ObservableObject {
             return result
         } catch {
             if submitted {
-                cloudProblems[target.gameID] = "Cloud shutdown could not be confirmed. Restart Iridium before playing or changing game files, then recheck saves. Saves and backups are kept."
+                cloudProblems[target.gameID] = "Cloud shutdown could not be confirmed. Restart Spark before playing or changing game files, then recheck saves. Saves and backups are kept."
             } else {
                 cloudProblems[target.gameID] = "Cloud state could not be confirmed. Saves and backups are kept; recheck before playing."
             }

@@ -9,7 +9,7 @@ public enum GameArgumentEditError: LocalizedError {
         case .stale: "The game's launch settings changed. Cancel and reopen the editor."
         case .invalidArgument: "An argument cannot contain a null character."
         case .verificationFailed: "The saved arguments could not be verified. Your previous settings were restored."
-        case .recoveryFailed: "The saved settings could not be confirmed. Reopen Iridium before trying again."
+        case .recoveryFailed: "The saved settings could not be confirmed. Reopen Spark before trying again."
         }
     }
 }

@@ -41,6 +41,7 @@ targets:
     info:
       path: Iridium/Info.plist
       properties:
+        CFBundleDisplayName: Spark
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSRequiresIPhoneOS: true
@@ -62,7 +63,7 @@ targets:
           NSAllowsArbitraryLoads: true
         NSBonjourServices:
           - _altserver._tcp
-        NSLocalNetworkUsageDescription: Iridium uses the local network to communicate with AltServer and local JIT helpers.
+        NSLocalNetworkUsageDescription: Spark uses the local network to communicate with AltServer and local JIT helpers.
         UIApplicationSupportsIndirectInputEvents: true
         UIFileSharingEnabled: true
         UILaunchStoryboardName: LaunchScreen
@@ -166,6 +167,7 @@ targets:
     info:
       path: SteamDownloadWidget/Info.plist
       properties:
+        CFBundleDisplayName: Spark
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:

@@ -34,6 +34,7 @@ struct RootTabView: View {
             .tag(1)
         }
         .preferredColorScheme(.dark)
+        .tint(SparkTheme.accent)
         .environmentObject(controller)
         .environment(\.menuController, controller)
         .onReceive(menuTimer) { _ in

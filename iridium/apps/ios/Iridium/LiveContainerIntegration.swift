@@ -50,12 +50,12 @@ struct LiveContainerIntegrationStatus: Equatable, Sendable {
         }
         guard launchStatus.fullyConfigured,
               launchStatus.launchWithJITEnabled == launchWithJITEnabled else {
-            return "Setup saved and verified. Restart required: fully close Iridium, then open it from LiveContainer. LiveContainer loads these per-app settings only when Iridium starts."
+            return "Setup saved and verified. Restart required: fully close Spark, then open it from LiveContainer. LiveContainer loads these per-app settings only when Spark starts."
         }
         if launchWithJITEnabled {
-            return "LiveContainer setup complete. LiveContainer will prepare JIT before Iridium starts."
+            return "LiveContainer setup complete. LiveContainer will prepare JIT before Spark starts."
         }
-        return "LiveContainer setup complete. Iridium will request JIT when you play."
+        return "LiveContainer setup complete. Spark will request JIT when you play."
     }
 
 }
@@ -68,9 +68,9 @@ enum LiveContainerIntegrationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notHosted:
-            "Iridium is not running inside LiveContainer."
+            "Spark is not running inside LiveContainer."
         case .missingConfiguration:
-            "LiveContainer's LCAppInfo.plist is missing from the Iridium app bundle."
+            "LiveContainer's LCAppInfo.plist is missing from the Spark app bundle."
         case .malformedConfiguration:
             "LiveContainer's LCAppInfo.plist could not be read as a property list."
         }

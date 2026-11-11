@@ -8,6 +8,8 @@
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).steam-download</string>
 	</array>
+	<key>CFBundleDisplayName</key>
+	<string>Spark</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -52,7 +54,7 @@
 		<string>_altserver._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Iridium uses the local network to communicate with AltServer and local JIT helpers.</string>
+	<string>Spark uses the local network to communicate with AltServer and local JIT helpers.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>

@@ -31,7 +31,7 @@ struct GameArgumentsEditor: View {
             }
             .disabled(!editable)
             Section("Automatic Compatibility Arguments") {
-                Text("Iridium may add graphics arguments or use this game's compatibility defaults when custom arguments are empty. These rules still apply at launch.")
+                Text("Spark may add graphics arguments or use this game's compatibility defaults when custom arguments are empty. These rules still apply at launch.")
                     .font(.footnote)
             }
             if current == nil {

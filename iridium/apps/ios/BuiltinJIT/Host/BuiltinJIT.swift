@@ -28,11 +28,11 @@ final class BuiltinJIT: NSObject, JITHost {
     @discardableResult
     func start(onListening: @escaping () -> Void, report: @escaping (String) -> Void, onUnavailable: (() -> Void)? = nil) -> Bool {
         dispatchPrecondition(condition: .onQueue(.main))
-        guard launcher == nil else { report("Restart Iridium before another built-in JIT attempt."); return false }
+        guard launcher == nil else { report("Restart Spark before another built-in JIT attempt."); return false }
         guard #available(iOS 18, *) else { report("Built-in JIT requires iOS 18 or later."); return false }
-        guard !Self.isHosted else { report("Built-in JIT requires standalone Iridium. Select external StikDebug in LiveContainer."); return false }
-        guard IRHasDebugEntitlement() else { report("This installation lacks debugging permission. Sign Iridium with get-task-allow."); return false }
-        guard !jit_check_debugged() else { report("A debugger is already attached. Restart Iridium without Xcode before using built-in JIT."); return false }
+        guard !Self.isHosted else { report("Built-in JIT requires standalone Spark. Select external StikDebug in LiveContainer."); return false }
+        guard IRHasDebugEntitlement() else { report("This installation lacks debugging permission. Sign Spark with get-task-allow."); return false }
+        guard !jit_check_debugged() else { report("A debugger is already attached. Restart Spark without Xcode before using built-in JIT."); return false }
         let data: Data
         do { data = try JITPairingStore.live.read() }
         catch { report("Import a valid pairing file in Settings → Launch Support → Built-in JIT."); return false }
@@ -69,7 +69,7 @@ final class BuiltinJIT: NSObject, JITHost {
             guard let self, !self.operationFinished else { return }
             self.onListening = nil
             // Do not kill a possibly attached debugger: it may own a stopped host thread.
-            self.finished("Built-in JIT timed out. Restart Iridium, then check LocalDevVPN and the pairing file.")
+            self.finished("Built-in JIT timed out. Restart Spark, then check LocalDevVPN and the pairing file.")
         }
         self.deadline = deadline
         DispatchQueue.main.asyncAfter(deadline: .now() + 180, execute: deadline)
@@ -100,7 +100,7 @@ final class BuiltinJIT: NSObject, JITHost {
             deadline?.cancel()
             onListening = nil
             if !finishedSuccessfully {
-                report?(error ?? "The helper ended before executable memory was ready. Restart Iridium.")
+                report?(error ?? "The helper ended before executable memory was ready. Restart Spark.")
             } else {
                 RuntimeLogCapture.writeLine("[Launch] Built-in JIT memory preparation and detach completed.")
             }
@@ -114,7 +114,7 @@ final class BuiltinJIT: NSObject, JITHost {
         guard launcher != nil, !operationFinished else { return }
         // Stop the launch callback. Do not terminate a helper that may own the debugger.
         onListening = nil
-        finished("JIT request cancelled. Restart Iridium before another attempt.")
+        finished("JIT request cancelled. Restart Spark before another attempt.")
     }
 
     func waitForDetach() -> Bool {

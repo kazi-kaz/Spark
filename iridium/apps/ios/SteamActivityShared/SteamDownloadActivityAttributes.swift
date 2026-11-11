@@ -37,11 +37,11 @@ struct SteamDownloadActivityAttributes: ActivityAttributes {
             case "downloading": "Transferring game files"
             case "verifying": "Verifying game files"
             case "finalizing": "Finishing installation"
-            case "waitingForeground": "Open Iridium to verify and continue"
+            case "waitingForeground": "Open Spark to verify and continue"
             case "paused": "Download paused"
             case "completed": "Verified and ready"
             case "cancelled": "Download cancelled"
-            case "failed": "Download stopped. Open Iridium to retry"
+            case "failed": "Download stopped. Open Spark to retry"
             default: "Preparing download"
             }
         }

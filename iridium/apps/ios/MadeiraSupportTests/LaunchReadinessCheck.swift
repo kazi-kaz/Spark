@@ -9,7 +9,7 @@ import Foundation
         precondition(issue(false)?.contains("runtime is incomplete") == true)
         precondition(issue(true, false)?.contains("executable is missing") == true)
         precondition(issue(true, true, true, true)?.contains("Close the current game") == true)
-        precondition(issue(true, true, false, true)?.contains("Restart Iridium") == true)
+        precondition(issue(true, true, false, true)?.contains("Restart Spark") == true)
         print("PASS: Madeira launch availability, missing runtime/game, busy and restart")
     }
 }

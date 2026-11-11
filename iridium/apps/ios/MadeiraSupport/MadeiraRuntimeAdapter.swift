@@ -57,8 +57,8 @@ enum MadeiraRuntimeAdapter {
                       exited: @escaping () -> Void = {}) {
         dispatchPrecondition(condition: .onQueue(.main))
         guard !MadeiraSyncSession.isSaving else { fail("Wait for the sync setting to finish saving, then try Play again."); return }
-        guard !MadeiraSyncSession.requiresRestart else { fail("Restart Iridium from the app switcher to use the saved sync mode."); return }
-        guard !started else { fail("Restart Iridium before another Madeira session."); return }
+        guard !MadeiraSyncSession.requiresRestart else { fail("Restart Spark from the app switcher to use the saved sync mode."); return }
+        guard !started else { fail("Restart Spark before another Madeira session."); return }
         #if os(iOS)
         for line in MadeiraLaunchEntitlements.logLines(
             isHosted: LiveContainerIntegration.isHosted()
@@ -295,7 +295,7 @@ enum MadeiraRuntimeAdapter {
                     RuntimeLogCapture.writeLine("[Launch] Automatic JIT memory capped at \(effectivePoolMB) MB because debugger-backed pages count toward the app memory footprint.")
                 }
                 guard let pool = MadeiraJITPoolPolicy.withEffectiveLimit(gameLimitMB: gamePoolMB, { StikJITHelper.allocateAdaptivePool() }) else {
-                    failure("Cannot allocate JIT memory. Restart Iridium, then try a smaller JIT memory limit.")
+                    failure("Cannot allocate JIT memory. Restart Spark, then try a smaller JIT memory limit.")
                     return
                 }
                 setenv("WINE_IOS_JIT_RX", String(UInt(bitPattern: pool.rx), radix: 16), 1)
@@ -305,13 +305,13 @@ enum MadeiraRuntimeAdapter {
                 StikJITHelper.detachDebugger()
                 #if BUILTIN_STIKJIT
                 if usingBuiltinJIT && !BuiltinJIT.shared.waitForDetach() {
-                    failure("Built-in JIT did not confirm memory preparation. Restart Iridium before retrying.")
+                    failure("Built-in JIT did not confirm memory preparation. Restart Spark before retrying.")
                     return
                 }
                 #endif
                 guard current() else { return }
                 guard iridium_reserve_fex_memory() != 0 else {
-                    failure("Cannot start the runtime: too little usable address space. Restart Iridium and try again.")
+                    failure("Cannot start the runtime: too little usable address space. Restart Spark and try again.")
                     return
                 }
                 guard current() else { return }
@@ -329,7 +329,7 @@ enum MadeiraRuntimeAdapter {
                 // MADEIRA_SRV_NOSEM=1 override available for comparisons.
                 setenv("MADEIRA_SRV_NOSEM", "0", 0)
                 guard wineserver_start(prefix.path) == 0 else {
-                    failure("Madeira Wine server failed to start. Restart Iridium before retrying.")
+                    failure("Madeira Wine server failed to start. Restart Spark before retrying.")
                     return
                 }
                 let serverWaitStart = ProcessInfo.processInfo.systemUptime
@@ -337,8 +337,8 @@ enum MadeiraRuntimeAdapter {
                 guard current() else { wineserver_stop(); return }
                 guard serverReady else {
                     failure(wineserver_is_running() == 0
-                            ? "Madeira Wine server stopped during startup. Restart Iridium before retrying."
-                            : "Madeira Wine server did not finish loading the registry. Restart Iridium before retrying.")
+                            ? "Madeira Wine server stopped during startup. Restart Spark before retrying."
+                            : "Madeira Wine server did not finish loading the registry. Restart Spark before retrying.")
                     wineserver_stop() // worker only; keep shutdown off the UI queue
                     return
                 }
@@ -347,7 +347,7 @@ enum MadeiraRuntimeAdapter {
                 RuntimeLogCapture.writeLine("[Launch] Starting the game process. Waiting for display output.")
                 let result = wine_process_start(prefix.path)
                 guard result == 0 else {
-                    failure("Madeira Wine launch failed. Restart Iridium before retrying.")
+                    failure("Madeira Wine launch failed. Restart Spark before retrying.")
                     wineserver_stop() // worker only; never join a native thread on the UI queue
                     return
                 }
@@ -418,7 +418,7 @@ enum MadeiraRuntimeAdapter {
                         let deadline = ProcessInfo.processInfo.systemUptime + 8
                         while wineserver_is_running() != 0 {
                             guard ProcessInfo.processInfo.systemUptime < deadline else {
-                                failure("The game exited but runtime shutdown is unconfirmed. Restart Iridium.")
+                                failure("The game exited but runtime shutdown is unconfirmed. Restart Spark.")
                                 return
                             }
                             do { try await Task.sleep(nanoseconds: 100_000_000) } catch { return }

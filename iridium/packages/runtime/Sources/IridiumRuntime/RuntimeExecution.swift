@@ -220,7 +220,7 @@ public struct FileSystemRuntimeSessionExecutor: RuntimeSessionExecutor {
             return .failure(
                 RuntimeFailure(
                     code: .desktopShellEntrypointBlocked,
-                    reason: "Desktop shell entrypoints are blocked; Iridium may only launch a resolved game executable.",
+                    reason: "Desktop shell entrypoints are blocked; Spark may only launch a resolved game executable.",
                     recoverySuggestion: "Select the game binary instead of explorer, cmd, or a launcher shell stub."
                 )
             )

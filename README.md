@@ -1,3 +1,9 @@
+# Spark
+
+Spark is a personal fork of [Iridium](https://github.com/intraducine/iridium), built on Madeira, that runs Windows games on iPhone and iPad. It keeps Iridium's licenses and credits and adds its own fixes and a redesigned interface. Internal names (folders, settings keys, the bundle identifier, config and log file names) still say Iridium so existing installs, saves and build scripts keep working. The upstream README follows.
+
+---
+
 # Iridium
 
 ![iOS](https://img.shields.io/badge/iOS-supported-black?style=flat-square&logo=apple)

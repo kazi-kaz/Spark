@@ -40,6 +40,7 @@ struct IridiumApp: App {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .tint(SparkTheme.accent)
             .task {
                 guard viewModel == nil else {
                     return
@@ -79,16 +80,28 @@ struct IridiumApp: App {
 
 private struct AppLaunchView: View {
     var body: some View {
-        VStack(spacing: 12) {
-            ProgressView("Loading Iridium")
-                .controlSize(.large)
-
-            Text("Preparing your library and runtime status.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        ZStack {
+            SparkTheme.ground.ignoresSafeArea()
+            VStack(spacing: 24) {
+                SparkMark(size: 132)
+                Text("SPARK")
+                    .font(.system(size: 40, weight: .heavy))
+                    .tracking(9)
+                    .foregroundStyle(.white)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Spark")
+            VStack(spacing: 12) {
+                Spacer()
+                ProgressView("Loading Spark")
+                    .tint(SparkTheme.accent)
+                Text("Preparing your library and runtime status.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .preferredColorScheme(.dark)
     }
 }

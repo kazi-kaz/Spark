@@ -30,7 +30,7 @@ struct SteamCloudView: View {
             Button("Enable for This Game and Account") { run("enable") }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Allow Iridium to download and upload saves for this game with \(steam.state.accountName ?? "the signed-in Steam account"). Before Play, Iridium can download one-sided changes. Uploads run after a normal confirmed game exit or when you choose Sync Changes. Closed or cancelled sessions need a manual sync. First saves and conflicts need your choice. Backups are kept on this device. Enabling compares saves; it does not transfer them yet.")
+            Text("Allow Spark to download and upload saves for this game with \(steam.state.accountName ?? "the signed-in Steam account"). Before Play, Spark can download one-sided changes. Uploads run after a normal confirmed game exit or when you choose Sync Changes. Closed or cancelled sessions need a manual sync. First saves and conflicts need your choice. Backups are kept on this device. Enabling compares saves; it does not transfer them yet.")
         }
         .confirmationDialog("Use the selected save copy?", isPresented: Binding(
             get: { choice != nil }, set: { if !$0 { choice = nil } }
@@ -42,7 +42,7 @@ struct SteamCloudView: View {
             }
             Button("Cancel", role: .cancel) { choice = nil }
         } message: {
-            Text("The other existing copy will be backed up before replacement. Keeping a missing device save leaves the Cloud copy intact. If either save changed since comparison, Iridium will require a new choice.")
+            Text("The other existing copy will be backed up before replacement. Keeping a missing device save leaves the Cloud copy intact. If either save changed since comparison, Spark will require a new choice.")
         }
         .confirmationDialog("Restore this device backup?", isPresented: Binding(
             get: { restoreID != nil }, set: { if !$0 { restoreID = nil } }
@@ -68,7 +68,7 @@ struct SteamCloudView: View {
         } header: {
             Text("Steam Cloud")
         } footer: {
-            Text("Only verified Windows Auto-Cloud save paths are supported. Iridium preserves backups before replacements and never deletes Cloud saves. Backups use extra device storage.")
+            Text("Only verified Windows Auto-Cloud save paths are supported. Spark preserves backups before replacements and never deletes Cloud saves. Backups use extra device storage.")
         }
     }
 
@@ -139,7 +139,7 @@ struct SteamCloudView: View {
                     MenuButton("Restore Device Backup \(id.prefix(8))…") { restoreID = id }
                         .disabled(!available || status.phase == "interrupted")
                 }
-                Text("Copies are in Files → Iridium → Steam Cloud Backups. Each backup.json records the original mapped path. device.bin is the previous device save; cloud.bin is the previous Cloud save when present. Keep these records with their copies.")
+                Text("Copies are in Files → Spark → Steam Cloud Backups. Each backup.json records the original mapped path. device.bin is the previous device save; cloud.bin is the previous Cloud save when present. Keep these records with their copies.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }

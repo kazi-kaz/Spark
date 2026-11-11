@@ -48,7 +48,7 @@ final class InterfaceTests: XCTestCase {
             app.buttons["rapidDirections"].tap()
             let selected = app.buttons["selectedGameCover"]
             XCTAssertEqual(selected.label, "Unreleased Project")
-            XCTAssertEqual(selected.frame.minX, app.staticTexts["Iridium"].frame.minX, accuracy: 4)
+            XCTAssertEqual(selected.frame.minX, app.staticTexts["Spark"].frame.minX, accuracy: 4)
         }
         pressPad(2, in: app) // Covers -> Play
         pressPad(1, in: app) // Play -> Game Options
@@ -344,7 +344,7 @@ final class InterfaceTests: XCTestCase {
             XCUIDevice.shared.orientation = orientation
             XCTAssertTrue(selected.waitForExistence(timeout: 3))
             let start = selected.label
-            let anchor = app.staticTexts["Iridium"].frame.minX
+            let anchor = app.staticTexts["Spark"].frame.minX
             for _ in 0..<3 { pressPad(1, in: app) }
             XCTAssertNotEqual(selected.label, start)
             XCTAssertEqual(selected.frame.minX, anchor, accuracy: 4)
