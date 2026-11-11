@@ -9,6 +9,7 @@ struct GameDetailView: View {
     var locate: () -> Void = {}
     let launch: () -> Void
     @ObservedObject private var artwork = LibraryArtwork.shared
+    @ObservedObject private var statuses = SparkGameStatusStore.shared
     @Environment(\.dismiss) private var dismiss
     @State private var rename = false
     @State private var confirmRemoval = false
@@ -27,6 +28,12 @@ struct GameDetailView: View {
                     do { try artwork.update(game.id) { $0.favorite.toggle() } } catch { artwork.error = error.localizedDescription }
                 }
             }
+            Section("Last Run") {
+                SparkStatusChip(status: statuses.status(for: game.id))
+                if let reason = statuses.status(for: game.id).detail {
+                    Text(reason).font(.footnote).foregroundStyle(.secondary)
+                }
+            }
             Section {
                 MenuButton("Rename & Artwork", systemImage: "photo") { rename = true }
                 MenuNavigationLink { GameInputSettingsView(game: game) } label: { Label("Controls", systemImage: "gamecontroller") }
@@ -34,6 +41,13 @@ struct GameDetailView: View {
                 MenuNavigationLink { GameStorageView(game: game, viewModel: viewModel, usesMadeiraRuntime: viewModel.usesMadeiraRuntime) } label: {
                     Label("Files & Saves", systemImage: "folder")
                 }
+                #if MADEIRA_RUNTIME
+                if viewModel.usesMadeiraRuntime {
+                    MenuNavigationLink { SparkGamePerformanceView(game: game) } label: {
+                        Label("Performance", systemImage: "bolt")
+                    }
+                }
+                #endif
                 if let target = SteamCloudTarget(game: game) {
                     MenuNavigationLink { SteamCloudView(target: target, viewModel: viewModel) } label: {
                         Label("Steam Cloud", systemImage: "icloud")

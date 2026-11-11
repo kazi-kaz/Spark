@@ -59,4 +59,39 @@ enum MadeiraGameConfig {
               allowedJITPoolMB.contains(mb) else { return nil }
         return mb
     }
+
+    /// `text` with `key` set to `value`, or with the key removed when `value` is nil.
+    /// Comments, other keys and their order are kept. Every existing line for the
+    /// key is dropped first, because the last occurrence wins when the file is read.
+    static func setting(_ key: String, to value: String?, in text: String) -> String {
+        var lines = text.isEmpty ? [] : text.components(separatedBy: "\n")
+        if lines.last == "" { lines.removeLast() }
+        lines.removeAll { raw in
+            let line = (raw.hasPrefix("\u{FEFF}") ? String(raw.dropFirst()) : raw)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !line.hasPrefix("#"), let eq = line.firstIndex(of: "=") else { return false }
+            return line[..<eq].trimmingCharacters(in: .whitespaces) == key
+        }
+        if let value { lines.append("\(key) = \(value)") }
+        return lines.isEmpty ? "" : lines.joined(separator: "\n") + "\n"
+    }
+
+    /// Saves this game's JIT pool size, or clears it when `mb` is nil. Writes the
+    /// config file already in use for the game, else iridium.cfg in its folder.
+    static func setJITPoolMB(_ mb: Int?, gameRoot: URL, documents: URL? = defaultDocuments()) throws {
+        if let mb, !allowedJITPoolMB.contains(mb) { throw CocoaError(.featureUnsupported) }
+        let file = locate(gameRoot: gameRoot, documents: documents) ?? gameRoot.appendingPathComponent(fileName)
+        var text = ""
+        if FileManager.default.fileExists(atPath: file.path) {
+            let data = try Data(contentsOf: file)
+            guard data.count <= 64 * 1024, let existing = String(data: data, encoding: .utf8) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            text = existing
+        } else if mb == nil {
+            return
+        }
+        let updated = setting(jitPoolKey, to: mb.map { String($0) }, in: text)
+        try Data(updated.utf8).write(to: file, options: .atomic)
+    }
 }

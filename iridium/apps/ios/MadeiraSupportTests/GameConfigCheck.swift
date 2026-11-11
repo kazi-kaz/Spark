@@ -47,6 +47,29 @@ import Foundation
         try Data("jit-pool-mb = 128\n".utf8).write(to: sameName)
         precondition(MadeiraGameConfig.locate(gameRoot: game, documents: documents)?.path == inGame.path)
 
+        // Saving a value keeps comments and other keys and replaces every old line.
+        let edited = MadeiraGameConfig.setting("jit-pool-mb", to: "128",
+            in: "# note\njit-pool-mb = 256\nenv.A = 1\njit-pool-mb=512\n")
+        precondition(edited == "# note\nenv.A = 1\njit-pool-mb = 128\n")
+        precondition(MadeiraGameConfig.setting("jit-pool-mb", to: nil, in: edited) == "# note\nenv.A = 1\n")
+        precondition(MadeiraGameConfig.setting("jit-pool-mb", to: nil, in: "") == "")
+        precondition(MadeiraGameConfig.setting("jit-pool-mb", to: "512", in: "") == "jit-pool-mb = 512\n")
+
+        // The setter writes the file in use and creates iridium.cfg when there is none.
+        let fresh = documents.appendingPathComponent("Games/Fresh Game")
+        try fm.createDirectory(at: fresh, withIntermediateDirectories: true)
+        try MadeiraGameConfig.setJITPoolMB(nil, gameRoot: fresh, documents: documents)
+        precondition(!fm.fileExists(atPath: fresh.appendingPathComponent("iridium.cfg").path))
+        try MadeiraGameConfig.setJITPoolMB(512, gameRoot: fresh, documents: documents)
+        precondition(MadeiraGameConfig.jitPoolMB(in: fresh.appendingPathComponent("iridium.cfg")) == 512)
+        try MadeiraGameConfig.setJITPoolMB(nil, gameRoot: fresh, documents: documents)
+        precondition(MadeiraGameConfig.jitPoolMB(in: fresh.appendingPathComponent("iridium.cfg")) == nil)
+        try MadeiraGameConfig.setJITPoolMB(256, gameRoot: steamGame, documents: documents)
+        precondition(MadeiraGameConfig.jitPoolMB(in: shared) == 256)
+        var rejected = false
+        do { try MadeiraGameConfig.setJITPoolMB(300, gameRoot: fresh, documents: documents) } catch { rejected = true }
+        precondition(rejected)
+
         print("PASS: per-game config location, syntax, and JIT pool size")
     }
 }
