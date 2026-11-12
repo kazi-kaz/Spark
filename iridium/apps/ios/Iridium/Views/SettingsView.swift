@@ -74,6 +74,14 @@ struct SettingsView: View {
             }.listRowBackground(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.06)).padding(.vertical, 2)).listRowSeparator(.hidden)
 
             Section("About") {
+                HStack(spacing: 12) {
+                    SparkMark(size: 26)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Spark").font(.headline)
+                        Text("Built on Iridium and Madeira").font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
                 MenuValue("Version", value: version)
                 Text("Manage launch support, runtime, input, artwork, and storage.")
                     .font(.footnote)

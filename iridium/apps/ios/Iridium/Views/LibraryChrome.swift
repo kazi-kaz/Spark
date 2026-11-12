@@ -2,13 +2,15 @@ import SwiftUI
 
 private struct LibraryGlass: ViewModifier {
     let prominent: Bool
+    /// Spark's accent (#FFB627). Written out because a check compiles this file on its own.
+    private let accent = Color(red: 1.0, green: 0.714, blue: 0.153)
     @Environment(\.isEnabled) private var isEnabled
     @ViewBuilder func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            if prominent && isEnabled { content.buttonStyle(.glassProminent).tint(.white).foregroundStyle(.black) }
+            if prominent && isEnabled { content.buttonStyle(.glassProminent).tint(accent).foregroundStyle(.black) }
             else { content.buttonStyle(.glass) }
         } else {
-            if prominent && isEnabled { content.buttonStyle(.borderedProminent).tint(.white).foregroundStyle(.black) }
+            if prominent && isEnabled { content.buttonStyle(.borderedProminent).tint(accent).foregroundStyle(.black) }
             else { content.buttonStyle(.bordered) }
         }
     }

@@ -11,6 +11,7 @@ struct GameDetailView: View {
     @ObservedObject private var artwork = LibraryArtwork.shared
     @ObservedObject private var statuses = SparkGameStatusStore.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var facts: SparkGameFacts?
     @State private var rename = false
     @State private var confirmRemoval = false
     @State private var confirmRefresh = false
@@ -23,15 +24,39 @@ struct GameDetailView: View {
     var body: some View {
         List {
             Section {
-                Text(artwork.title(game)).font(.title2.bold()).lineLimit(1)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(artwork.title(game)).font(.largeTitle.bold()).lineLimit(2).minimumScaleFactor(0.7)
+                    if let facts {
+                        Text(facts.summary).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(2)
+                    }
+                    SparkStatusChip(status: statuses.status(for: game.id))
+                }
+                .padding(.vertical, 4)
+                MenuButton {
+                    dismiss()
+                    launch()
+                } label: {
+                    Label(viewModel.launchActionTitle(for: game), systemImage: "play.fill")
+                        .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
+                        .foregroundStyle(viewModel.isLaunchActionDisabled(for: game) ? Color.white.opacity(0.5) : SparkTheme.onAccent)
+                }
+                .disabled(viewModel.isLaunchActionDisabled(for: game))
+                .listRowBackground(viewModel.isLaunchActionDisabled(for: game) ? SparkTheme.raised : SparkTheme.accent)
+                .accessibilityIdentifier("gameOptionsPlay")
                 MenuButton(artwork.appearance(game.id).favorite ? "Remove from Favorites" : "Add to Favorites", systemImage: "heart") {
                     do { try artwork.update(game.id) { $0.favorite.toggle() } } catch { artwork.error = error.localizedDescription }
                 }
             }
-            Section("Last Run") {
-                SparkStatusChip(status: statuses.status(for: game.id))
-                if let reason = statuses.status(for: game.id).detail {
+            if let reason = statuses.status(for: game.id).detail {
+                Section("Last Run") {
                     Text(reason).font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            if let facts, !facts.notes.isEmpty {
+                Section("Good to Know") {
+                    ForEach(facts.notes, id: \.self) { note in
+                        Text(note).font(.footnote)
+                    }
                 }
             }
             Section {
@@ -102,6 +127,11 @@ struct GameDetailView: View {
             } footer: { Text("Removes only this library entry. Game files, artwork, and saves stay on your device.") }
         }
         .iridiumListChrome().navigationTitle("Game Options").navigationBarTitleDisplayMode(.inline)
+        .task(id: game.id) {
+            // Reading the program's headers touches the disk, so do it off the main thread.
+            let path = game.launchProfile.executablePath
+            facts = await Task.detached(priority: .utility) { SparkGameFacts.read(executablePath: path) }.value
+        }
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .top, spacing: 0) {
             ZStack {

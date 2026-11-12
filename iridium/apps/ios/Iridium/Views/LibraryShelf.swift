@@ -17,6 +17,8 @@ struct LibraryShelf: View {
     var settings: () -> Void = {}
     var acceptsControllerInput = true
     @ObservedObject var statuses = SparkGameStatusStore.shared
+    /// Third filter value, beside All Games and Favorites: games whose last run stopped.
+    @State private var stoppedOnly = false
     @State private var visible = false
     private enum MenuFocus: Int { case filter, search, add, settings, play, options, covers }
     @State private var menuFocus: MenuFocus = .covers
@@ -28,7 +30,14 @@ struct LibraryShelf: View {
     @State private var carouselPosition = ScrollPosition(idType: Int.self)
     @State private var carouselIsUserDriven = false
     private var filtered: [GameRecord] {
-        games.filter { (!favorites || artwork.appearance($0.id).favorite) && (search.isEmpty || artwork.title($0).localizedCaseInsensitiveContains(search)) }
+        games.filter { (!favorites || artwork.appearance($0.id).favorite) && (!stoppedOnly || statuses.status(for: $0.id).detail != nil) && (search.isEmpty || artwork.title($0).localizedCaseInsensitiveContains(search)) }
+    }
+    /// 0 = All Games, 1 = Favorites, 2 = Stopped. Favorites stays a Bool for the library's owner.
+    private var filterIndex: Int { stoppedOnly ? 2 : favorites ? 1 : 0 }
+    private func setFilter(_ index: Int) {
+        let bounded = min(2, max(0, index))
+        favorites = bounded == 1
+        stoppedOnly = bounded == 2
     }
     private var selected: GameRecord? { filtered.first { $0.id == selectedID } ?? filtered.first }
     var body: some View {
@@ -102,6 +111,9 @@ struct LibraryShelf: View {
                         } else {
                             if !search.isEmpty {
                                 ContentUnavailableView.search(text: search)
+                            } else if stoppedOnly {
+                                ContentUnavailableView("Nothing Stopped", systemImage: "checkmark.circle",
+                                    description: Text("Games whose last run stopped appear here."))
                             } else if favorites {
                                 ContentUnavailableView("No Favorites Yet", systemImage: "heart",
                                     description: Text("Add games through Game Options."))
@@ -239,7 +251,7 @@ struct LibraryShelf: View {
             return
         }
         if input == .previousTab || input == .nextTab {
-            favorites = input == .nextTab
+            setFilter(filterIndex + (input == .nextTab ? 1 : -1))
             menuFocus = .covers
             return
         }
@@ -254,8 +266,8 @@ struct LibraryShelf: View {
             let step = input == .left ? -1 : 1
             if menuFocus == .covers { moveSelection(step) }
             else if menuFocus == .filter {
-                if step > 0 && favorites { menuFocus = .search }
-                else { favorites = step > 0 }
+                if step > 0 && filterIndex == 2 { menuFocus = .search }
+                else { setFilter(filterIndex + step) }
             }
             else {
                 let range = menuFocus.rawValue <= MenuFocus.settings.rawValue ? 0...3 : 4...5
@@ -272,7 +284,7 @@ struct LibraryShelf: View {
             if selected == nil { menuFocus = .add }
         case .select:
             switch menuFocus {
-            case .filter: favorites.toggle()
+            case .filter: setFilter((filterIndex + 1) % 3)
             case .search: searchPresented = true; searching = true
             case .add: importGame()
             case .settings: settings()
@@ -306,7 +318,7 @@ struct LibraryShelf: View {
             HStack(spacing: 16) {
                 Text("Spark").font(landscape ? .title2.bold() : .title.bold())
                 SparkMark(size: landscape ? 20 : 24).padding(.leading, -10)
-                if landscape { libraryFilter.frame(minWidth: 180, maxWidth: 300) }
+                if landscape { libraryFilter.frame(minWidth: 220, maxWidth: 360) }
                 Spacer(minLength: 8)
                 Button { menuFocus = .search; searchPresented.toggle(); searching = searchPresented } label: {
                     Image(systemName: "magnifyingglass").frame(width: 44, height: 44)
@@ -322,9 +334,10 @@ struct LibraryShelf: View {
     private var libraryFilter: some View {
         HStack(spacing: 10) {
         if controller.showingControllerHints { shoulderHint("LB") }
-        Picker("Library filter", selection: Binding(get: { favorites }, set: { menuFocus = .filter; favorites = $0 })) {
-            Text("All Games").tag(false)
-            Text("Favorites").tag(true)
+        Picker("Library filter", selection: Binding(get: { filterIndex }, set: { menuFocus = .filter; setFilter($0) })) {
+            Text("All Games").tag(0)
+            Text("Favorites").tag(1)
+            Text("Stopped").tag(2)
         }.pickerStyle(.segmented).focused($keyboardFocus, equals: .filter).overlay { controllerFocus(.filter) }.onHover { if $0 { menuFocus = .filter } }
         if controller.showingControllerHints { shoulderHint("RB") }
         }
