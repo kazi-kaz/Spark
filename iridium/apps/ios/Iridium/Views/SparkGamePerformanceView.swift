@@ -82,4 +82,46 @@ struct SparkGamePerformanceView: View {
         }
     }
 }
+
+/// The game's JIT memory choice as a segmented control, for the game page.
+struct SparkJITMemoryControl: View {
+    let game: GameRecord
+    /// 0 means the game follows the app-wide JIT Memory Limit.
+    @State private var pool = 0
+    @State private var failed = false
+
+    private static let choices = [0, 128, 256, 512, 1024]
+    private var root: URL { URL(fileURLWithPath: game.installPath) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("JIT memory").font(.body.weight(.medium)).foregroundStyle(Color.white)
+            Picker("JIT memory", selection: Binding(get: { pool }, set: { choose($0) })) {
+                ForEach(Self.choices, id: \.self) { mb in
+                    Text(mb == 0 ? "Auto" : "\(mb)").tag(mb)
+                }
+            }
+            .pickerStyle(.segmented)
+            .menuFocusable(adjust: { step in
+                let index = Self.choices.firstIndex(of: pool) ?? 0
+                choose(Self.choices[min(Self.choices.count - 1, max(0, index + step))])
+            })
+            if failed {
+                Text("The setting could not be saved.").font(.footnote).foregroundStyle(SparkTheme.problem)
+            }
+        }
+        .padding(.vertical, 10)
+        .onAppear { pool = MadeiraGameConfig.jitPoolMB(in: MadeiraGameConfig.locate(gameRoot: root)) ?? 0 }
+    }
+
+    private func choose(_ mb: Int) {
+        do {
+            try MadeiraGameConfig.setJITPoolMB(mb == 0 ? nil : mb, gameRoot: root)
+            pool = mb
+            failed = false
+        } catch {
+            failed = true
+        }
+    }
+}
 #endif

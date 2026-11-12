@@ -50,6 +50,19 @@ struct SparkLaunchDiagnosis: Equatable, Sendable {
         return find(in: app + "\n" + runtime)
     }
 
+    /// The "[Launch] ..." lines of the latest launch, oldest first, for the Logs screen.
+    static func latestLaunchLines(documents: URL? = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+                                  limit: Int = 80) -> [String] {
+        guard let documents else { return [] }
+        let log = tail(of: documents.appendingPathComponent("iridium-runtime.log"))
+        var text = Substring(log)
+        if let marker = log.range(of: launchMarker, options: .backwards) {
+            text = log[marker.lowerBound...]
+        }
+        let lines = text.split(whereSeparator: \.isNewline).filter { $0.hasPrefix("[Launch] ") }
+        return lines.suffix(limit).map { String($0.dropFirst("[Launch] ".count).prefix(300)) }
+    }
+
     private static func tail(of file: URL, bytes: UInt64 = 256 * 1024) -> String {
         guard let handle = try? FileHandle(forReadingFrom: file) else { return "" }
         defer { try? handle.close() }

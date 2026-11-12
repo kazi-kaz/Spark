@@ -72,12 +72,16 @@ struct SparkStatusChip: View {
     }
 
     var body: some View {
-        Label(status.title, systemImage: symbol)
+        // An HStack, not a Label: inside a list row a Label drops its title here.
+        HStack(spacing: 5) {
+            Image(systemName: symbol).accessibilityHidden(true)
+            Text(status.title).lineLimit(1)
+        }
             .font(.caption.weight(.semibold))
             .foregroundStyle(tone)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(.black.opacity(0.6), in: Capsule())
+            .background(Color.black.opacity(0.6), in: Capsule())
             .fixedSize()
     }
 }

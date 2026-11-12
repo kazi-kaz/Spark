@@ -21,112 +21,194 @@ struct GameDetailView: View {
     @State private var installerError: String?
     @Environment(\.menuController) private var controller
 
-    var body: some View {
-        List {
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(artwork.title(game)).font(.largeTitle.bold()).lineLimit(2).minimumScaleFactor(0.7)
-                    if let facts {
-                        Text(facts.summary).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(2)
+    @ViewBuilder private var playRow: some View {
+        HStack(spacing: 10) {
+            MenuButton {
+                dismiss()
+                launch()
+            } label: {
+                Label(viewModel.launchActionTitle(for: game), systemImage: "play.fill")
+                    .font(.title3.weight(.heavy)).frame(maxWidth: .infinity).frame(height: 58)
+            }
+            .buttonStyle(SparkPillButtonStyle(prominent: true))
+            .disabled(viewModel.isLaunchActionDisabled(for: game))
+            .accessibilityIdentifier("gameOptionsPlay")
+            MenuButton {
+                do { try artwork.update(game.id) { $0.favorite.toggle() } } catch { artwork.error = error.localizedDescription }
+            } label: {
+                Image(systemName: artwork.appearance(game.id).favorite ? "heart.fill" : "heart")
+                    .font(.title3.weight(.semibold)).frame(width: 58, height: 58)
+            }
+            .buttonStyle(SparkPillButtonStyle())
+            .accessibilityLabel(artwork.appearance(game.id).favorite ? "Remove from Favorites" : "Add to Favorites")
+        }
+    }
+
+    @ViewBuilder private var beforeYouPlay: some View {
+        if viewModel.isLaunchActionDisabled(for: game) && !viewModel.preparingInstaller {
+            SparkCard(title: "Before You Play") {
+                Text(viewModel.launchActionDetail(for: game) ?? "Check the game files and runtime settings.")
+                    .font(.callout).padding(.vertical, 10)
+                if viewModel.jitStatus != .ready {
+                    SparkDivider()
+                    MenuButton { viewModel.enableJITWithRecommendedTool() } label: {
+                        SparkRow(title: "Enable JIT", systemImage: "bolt.fill", chevron: false)
                     }
-                    SparkStatusChip(status: statuses.status(for: game.id))
                 }
-                .padding(.vertical, 4)
-                MenuButton {
-                    dismiss()
-                    launch()
-                } label: {
-                    Label(viewModel.launchActionTitle(for: game), systemImage: "play.fill")
-                        .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
-                        .foregroundStyle(viewModel.isLaunchActionDisabled(for: game) ? Color.white.opacity(0.5) : SparkTheme.onAccent)
+                if !FileManager.default.fileExists(atPath: game.launchProfile.executablePath) {
+                    SparkDivider()
+                    MenuButton { locate() } label: {
+                        SparkRow(title: "Locate Game Folder", systemImage: "folder.badge.questionmark", chevron: false)
+                    }
+                    Text("Choose the folder containing this game and its executable. Spark copies it to a new location and keeps your existing saves.")
+                        .font(.footnote).foregroundStyle(Color.white.opacity(0.6)).padding(.bottom, 8)
+                }
+                SparkDivider()
+                MenuButton { viewModel.verifyGameRegistration(game) } label: {
+                    SparkRow(title: "Check Game Files", systemImage: "checkmark.shield", chevron: false)
+                }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder private var gameCard: some View {
+        SparkCard(title: "For This Game") {
+            #if MADEIRA_RUNTIME
+            if viewModel.usesMadeiraRuntime {
+                SparkJITMemoryControl(game: game)
+                SparkDivider()
+            }
+            #endif
+            MenuNavigationLink { GameInputSettingsView(game: game) } label: { SparkRow(title: "Controls", systemImage: "gamecontroller") }
+                .accessibilityIdentifier("gameControlsLink")
+            SparkDivider()
+            MenuNavigationLink { GameStorageView(game: game, viewModel: viewModel, usesMadeiraRuntime: viewModel.usesMadeiraRuntime) } label: {
+                SparkRow(title: "Files & Saves", systemImage: "folder")
+            }
+            #if MADEIRA_RUNTIME
+            if viewModel.usesMadeiraRuntime {
+                SparkDivider()
+                MenuNavigationLink { SparkGamePerformanceView(game: game) } label: {
+                    SparkRow(title: "Performance & Config", systemImage: "bolt")
+                }
+            }
+            #endif
+            if let target = SteamCloudTarget(game: game) {
+                SparkDivider()
+                MenuNavigationLink { SteamCloudView(target: target, viewModel: viewModel) } label: {
+                    SparkRow(title: "Steam Cloud", systemImage: "icloud")
+                }
+            }
+            SparkDivider()
+            MenuButton { rename = true } label: {
+                SparkRow(title: "Rename & Artwork", systemImage: "photo", chevron: false)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder private var maintenance: some View {
+        if viewModel.usesMadeiraRuntime {
+            SparkCard(title: "Maintenance") {
+                MenuButton { installerPicker = true } label: {
+                    SparkRow(title: "Run Installer", systemImage: "gearshape", chevron: false)
                 }
                 .disabled(viewModel.isLaunchActionDisabled(for: game))
-                .listRowBackground(viewModel.isLaunchActionDisabled(for: game) ? SparkTheme.raised : SparkTheme.accent)
-                .accessibilityIdentifier("gameOptionsPlay")
-                MenuButton(artwork.appearance(game.id).favorite ? "Remove from Favorites" : "Add to Favorites", systemImage: "heart") {
-                    do { try artwork.update(game.id) { $0.favorite.toggle() } } catch { artwork.error = error.localizedDescription }
+                if viewModel.preparingInstaller { ProgressView("Copying installer…").padding(.vertical, 8) }
+                SparkDivider()
+                MenuButton { confirmRefresh = true } label: {
+                    SparkRow(title: "Refresh Game Copy", systemImage: "arrow.clockwise", chevron: false)
                 }
+                .disabled(viewModel.refreshingGameCopy || viewModel.isLaunchActionDisabled(for: game))
             }
-            if let reason = statuses.status(for: game.id).detail {
-                Section("Last Run") {
-                    Text(reason).font(.footnote).foregroundStyle(.secondary)
-                }
-            }
-            if let facts, !facts.notes.isEmpty {
-                Section("Good to Know") {
-                    ForEach(facts.notes, id: \.self) { note in
-                        Text(note).font(.footnote)
-                    }
-                }
-            }
-            Section {
-                MenuButton("Rename & Artwork", systemImage: "photo") { rename = true }
-                MenuNavigationLink { GameInputSettingsView(game: game) } label: { Label("Controls", systemImage: "gamecontroller") }
-                    .accessibilityIdentifier("gameControlsLink")
-                MenuNavigationLink { GameStorageView(game: game, viewModel: viewModel, usesMadeiraRuntime: viewModel.usesMadeiraRuntime) } label: {
-                    Label("Files & Saves", systemImage: "folder")
-                }
-                #if MADEIRA_RUNTIME
-                if viewModel.usesMadeiraRuntime {
-                    MenuNavigationLink { SparkGamePerformanceView(game: game) } label: {
-                        Label("Performance", systemImage: "bolt")
-                    }
-                }
-                #endif
-                if let target = SteamCloudTarget(game: game) {
-                    MenuNavigationLink { SteamCloudView(target: target, viewModel: viewModel) } label: {
-                        Label("Steam Cloud", systemImage: "icloud")
-                    }
-                }
-            }
-            if viewModel.usesMadeiraRuntime {
-                Section {
-                    MenuButton("Run Installer", systemImage: "gearshape") { installerPicker = true }
-                        .disabled(viewModel.isLaunchActionDisabled(for: game))
-                    if viewModel.preparingInstaller { ProgressView("Copying installer…") }
-                } footer: { Text("Choose a Windows installer for this game. The game starts after setup.") }
-                Section {
-                    MenuButton("Refresh Game Copy", systemImage: "arrow.clockwise") { confirmRefresh = true }
-                        .disabled(viewModel.refreshingGameCopy || viewModel.isLaunchActionDisabled(for: game))
-                } footer: {
-                    Text("Refreshes the isolated runtime copy from the imported files. The current copy is kept as a backup. Restart Spark before refreshing after a game session.")
-                }
-            }
-            if viewModel.isLaunchActionDisabled(for: game) && !viewModel.preparingInstaller {
-                Section("Before You Play") {
-                    Text(viewModel.launchActionDetail(for: game) ?? "Check the game files and runtime settings.")
-                    if viewModel.jitStatus != .ready {
-                        MenuButton("Enable JIT") { viewModel.enableJITWithRecommendedTool() }
-                    }
-                    if !FileManager.default.fileExists(atPath: game.launchProfile.executablePath) {
-                        MenuButton("Locate Game Folder", action: locate)
-                        Text("Choose the folder containing this game and its executable. Spark copies it to a new location and keeps your existing saves.").font(.footnote)
-                    }
-                    MenuButton("Check Game Files") { viewModel.verifyGameRegistration(game) }
-                }
-            }
-            Section {
-                MenuNavigationLink("Advanced") {
-                    List {
-                        Section("Launch") {
-                            MenuValue("Executable", value: game.launchProfile.executablePath)
-                            MenuNavigationLink("Custom Arguments") { GameArgumentsEditor(game: game, viewModel: viewModel) }
-                                .disabled(!viewModel.canEditGameArguments(game.id))
-                            MenuNavigationLink("Launch Checks") { GameCompatibilityView(game: game, viewModel: viewModel) }
-                        }
-                        Section {
-                            MenuNavigationLink("Runtime Settings") { SettingsView(viewModel: viewModel) }
-                            if !viewModel.usesMadeiraRuntime { MenuNavigationLink("Windows Environment") { GameEnvironmentView(game: game, viewModel: viewModel) } }
-                        }
-                    }.iridiumListChrome().navigationTitle("Advanced")
-                }
-            }
-            Section {
-                MenuButton("Remove from Library", role: .destructive) { confirmRemoval = true }
-                    .disabled(viewModel.preparingInstaller || viewModel.activeRuntimePlayerSession?.gameID == game.id)
-            } footer: { Text("Removes only this library entry. Game files, artwork, and saves stay on your device.") }
+            .buttonStyle(.plain)
+            Text("Run Installer starts a Windows installer in this game's environment; the game starts after setup. Refresh Game Copy rebuilds the isolated copy from the imported files and keeps the current copy as a backup. Restart Spark before refreshing after a game session.")
+                .font(.footnote).foregroundStyle(Color.white.opacity(0.55)).padding(.horizontal, 6)
         }
-        .iridiumListChrome().navigationTitle("Game Options").navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder private var advancedCard: some View {
+        SparkCard {
+            MenuNavigationLink {
+                List {
+                    Section("Launch") {
+                        MenuValue("Executable", value: game.launchProfile.executablePath)
+                        MenuNavigationLink("Custom Arguments") { GameArgumentsEditor(game: game, viewModel: viewModel) }
+                            .disabled(!viewModel.canEditGameArguments(game.id))
+                        MenuNavigationLink("Launch Checks") { GameCompatibilityView(game: game, viewModel: viewModel) }
+                    }
+                    Section {
+                        MenuNavigationLink("Runtime Settings") { SettingsView(viewModel: viewModel) }
+                        if !viewModel.usesMadeiraRuntime { MenuNavigationLink("Windows Environment") { GameEnvironmentView(game: game, viewModel: viewModel) } }
+                    }
+                }.iridiumListChrome().navigationTitle("Advanced")
+            } label: {
+                SparkRow(title: "Advanced", systemImage: "wrench.and.screwdriver")
+            }
+            SparkDivider()
+            MenuButton(role: .destructive) { confirmRemoval = true } label: {
+                SparkRow(title: "Remove from Library", systemImage: "trash", chevron: false, tone: SparkTheme.problem)
+            }
+            .disabled(viewModel.preparingInstaller || viewModel.activeRuntimePlayerSession?.gameID == game.id)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The game's artwork with its title, facts and last-run status over it.
+    private var hero: some View {
+        let appearance = artwork.appearance(game.id)
+        return ZStack(alignment: .bottomLeading) {
+            SparkGameArt(image: artwork.displayImage(appearance.background) ?? artwork.displayImage(appearance.cover),
+                         title: artwork.title(game),
+                         position: appearance.background != nil ? appearance.backgroundY : appearance.coverY)
+            LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.9)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 8) {
+                SparkStatusChip(status: statuses.status(for: game.id))
+                Text(artwork.title(game)).font(.system(size: 34, weight: .heavy)).lineLimit(2).minimumScaleFactor(0.6)
+                if let facts {
+                    Text(facts.summary).font(.caption.monospaced()).foregroundStyle(Color.white.opacity(0.75)).lineLimit(2)
+                }
+            }
+            .padding(18)
+        }
+        .frame(maxWidth: .infinity).frame(height: 270)
+        .clipShape(RoundedRectangle(cornerRadius: 30))
+        .overlay { RoundedRectangle(cornerRadius: 30).strokeBorder(Color.white.opacity(0.10), lineWidth: 1) }
+        .accessibilityElement(children: .combine)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                hero
+                playRow
+                if let reason = statuses.status(for: game.id).detail {
+                    SparkCard(title: "Last Run") {
+                        Text(reason).font(.callout).foregroundStyle(SparkTheme.problem).padding(.vertical, 10)
+                    }
+                }
+                if let facts, !facts.notes.isEmpty {
+                    SparkCard(title: "Good to Know") {
+                        ForEach(facts.notes, id: \.self) { note in
+                            Text(note).font(.callout).foregroundStyle(Color.white.opacity(0.85)).padding(.vertical, 8)
+                        }
+                    }
+                }
+                beforeYouPlay
+                gameCard
+                maintenance
+                advancedCard
+                Text("Removing only deletes this library entry. Game files, artwork, and saves stay on your device.")
+                    .font(.footnote).foregroundStyle(Color.white.opacity(0.55)).padding(.horizontal, 6)
+            }
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 32)
+        }
+        .scrollIndicators(.hidden)
+        .background(SparkTheme.ground.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .controllerMenuScope()
+        .navigationTitle("Game Options").navigationBarTitleDisplayMode(.inline)
         .task(id: game.id) {
             // Reading the program's headers touches the disk, so do it off the main thread.
             let path = game.launchProfile.executablePath

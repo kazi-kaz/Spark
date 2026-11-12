@@ -29,6 +29,7 @@ struct LibraryView: View {
     @State private var favorites = false
     @State private var detailGame: GameRecord?
     @State private var appSettings = false
+    @State private var showLogs = false
     @State private var importName = ""
     @State private var chooseAnotherFolder = false
     @State private var relocatingGame: GameRecord?
@@ -38,7 +39,7 @@ struct LibraryView: View {
         if appSettings {
             SettingsView(viewModel: viewModel, onBack: { appSettings = false })
         } else {
-        LibraryShelf(games: viewModel.games, artwork: artwork, controller: controller,
+        SparkLibraryView(games: viewModel.games, artwork: artwork, controller: controller,
             play: { requestGameLaunch($0) },
             disabled: { viewModel.isLaunchActionDisabled(for: $0) && !isPlayerTakingOver($0) },
             launchTitle: { isPlayerTakingOver($0) ? "Play" : viewModel.launchActionTitle(for: $0) },
@@ -46,7 +47,8 @@ struct LibraryView: View {
             details: { detailGame = $0 },
             search: $search, favorites: $favorites, selectedID: $selectedID,
             importGame: { relocatingGame = nil; isShowingImportChoices = true }, settings: { appSettings = true },
-            acceptsControllerInput: detailGame == nil && !appSettings && !isPresentingImportPicker && !isShowingImportChoices && !isPresentingGamesFolder && viewModel.importScanResult == nil && !isShowingLiveContainerRepair && !isShowingLiveContainerRelaunchRequired && artwork.error == nil)
+            showDownloads: showDownloads, showLogs: { showLogs = true },
+            acceptsControllerInput: detailGame == nil && !showLogs && !appSettings && !isPresentingImportPicker && !isShowingImportChoices && !isPresentingGamesFolder && viewModel.importScanResult == nil && !isShowingLiveContainerRepair && !isShowingLiveContainerRelaunchRequired && artwork.error == nil)
             .toolbar(.hidden, for: .navigationBar)
         }
         }
@@ -79,6 +81,7 @@ struct LibraryView: View {
                 relocatingGame = game; requestGameImport()
             }, launch: { requestGameLaunch(game) })
         }
+        .navigationDestination(isPresented: $showLogs) { SparkLogsView() }
         .task(id: "\(viewModel.games.map(\.id))-\(artwork.connected)") { await artwork.prepare(viewModel.games) }
         .modifier(SteamCloudLaunchPrompt(viewModel: viewModel))
         .alert("Artwork", isPresented: Binding(get: { artwork.error != nil }, set: { if !$0 { artwork.error = nil } })) {
