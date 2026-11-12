@@ -38,48 +38,48 @@ import SwiftUI
         GeometryReader { geometry in
             let bounds = CGRect(origin: .zero, size: geometry.size)
             let landscape = bounds.width > bounds.height && !typeSize.isAccessibilitySize
-            let top = max(safeInsets.top + (landscape ? 52 : 36), landscape ? bounds.height * 0.18 : 0)
-            let leading = safeInsets.leading + (landscape ? 32 : 24)
-            let trailing = safeInsets.trailing + (landscape ? 32 : 24)
-            let coverWidth = landscape
-                ? min(210, max(120, (bounds.height - top - safeInsets.bottom - 24) * 2 / 3))
-                : min(190, bounds.width * 0.48)
-            let coverHeight = coverWidth * 1.5
+            let side = max(safeInsets.leading, safeInsets.trailing) + (landscape ? 32 : 20)
             let motion = !reduceMotion && !typeSize.isAccessibilitySize && !motionState.settled
             let sourceTitle = artwork.retainedFrame(artwork.titleFrame, in: bounds)
             let sourceCover = artwork.retainedFrame(artwork.coverFrame, in: bounds)
+            let ended = !phase.isBusy && phase != .playing
+            let top = safeInsets.top + (landscape ? 20 : (ended ? 12 : 56))
+            let bottom = safeInsets.bottom + 20
+            let room = max(0, bounds.height - top - bottom)
 
             ZStack(alignment: .topLeading) {
-                Color.black
+                SparkTheme.ground
                 backdrop(in: bounds)
                 ScrollView {
                     Group {
-                        if landscape, let cover = artwork.cover {
-                            HStack(alignment: .top, spacing: 24) {
-                                movingCover(cover, width: coverWidth, height: coverHeight,
-                                            source: sourceCover, motion: motion)
-                                VStack(alignment: .leading, spacing: 10) {
-                                    movingTitle(landscape: true, source: sourceTitle, motion: motion)
-                                    launchDetails()
+                        if ended {
+                            stoppedContent.frame(minHeight: room, alignment: .top)
+                        } else if landscape {
+                            HStack(alignment: .center, spacing: 28) {
+                                identity(landscape: true, sourceTitle: sourceTitle, sourceCover: sourceCover, motion: motion)
+                                    .frame(maxWidth: .infinity)
+                                VStack(spacing: 14) {
+                                    progressCard
+                                    startingActions
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(maxWidth: .infinity)
                             }
+                            .frame(minHeight: room)
                         } else {
-                            VStack(alignment: .leading, spacing: 16) {
-                                movingTitle(landscape: false, source: sourceTitle, motion: motion)
-                                if let cover = artwork.cover {
-                                    movingCover(cover, width: coverWidth, height: coverHeight,
-                                                source: sourceCover, motion: motion)
-                                        .frame(maxWidth: .infinity)
-                                }
-                                launchDetails()
+                            VStack(spacing: 24) {
+                                identity(landscape: false, sourceTitle: sourceTitle, sourceCover: sourceCover, motion: motion)
+                                progressCard
+                                Spacer(minLength: 8)
+                                startingActions
                             }
+                            .frame(minHeight: room, alignment: .top)
                         }
                     }
-                    .padding(.leading, leading).padding(.trailing, trailing)
+                    .frame(maxWidth: 720)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, side)
                     .padding(.top, top)
-                    .padding(.bottom, safeInsets.bottom + 24)
-                    .frame(minHeight: bounds.height, alignment: .topLeading)
+                    .padding(.bottom, bottom)
                 }
                 .scrollBounceBehavior(.basedOnSize)
             }
@@ -87,20 +87,67 @@ import SwiftUI
             .foregroundStyle(.white)
         }
         .accessibilityIdentifier("playerLaunchArtwork")
+        .task(id: phase) {
+            // Read the logs off the main thread, and only after a failed launch.
+            guard phase == .failed else { diagnosis = nil; return }
+            diagnosis = await Task.detached(priority: .utility) { SparkLaunchDiagnosis.latest() }.value
+            // Keep the cause with the game so the library can show it later.
+            if let diagnosis { SparkGameStatusStore.shared.record(.stopped(diagnosis.cause), for: session.gameID) }
+        }
+    }
+
+    // MARK: Starting
+
+    /// The game's icon inside the progress ring, with its title underneath.
+    private func identity(landscape: Bool, sourceTitle: CGRect?, sourceCover: CGRect?, motion: Bool) -> some View {
+        VStack(spacing: 16) {
+            ZStack {
+                progressRing
+                if let cover = artwork.cover {
+                    movingCover(cover, width: 96, height: 96, source: sourceCover, motion: motion)
+                } else {
+                    SparkGameArt(image: nil, title: artwork.title)
+                        .frame(width: 96, height: 96)
+                        .clipShape(RoundedRectangle(cornerRadius: 26))
+                }
+            }
+            .frame(width: 136, height: 136)
+            VStack(spacing: 4) {
+                Text(phase == .closing ? "CLOSING" : "STARTING")
+                    .font(.caption.weight(.bold)).tracking(1.6)
+                    .foregroundStyle(.white.opacity(0.75))
+                movingTitle(landscape: landscape, source: sourceTitle, motion: motion)
+            }
+        }
+    }
+
+    /// Fills as launch steps complete; it never claims the launch is done.
+    private var progressRing: some View {
+        let steps = Double(SparkLaunchStep.allCases.count + 1)
+        let fraction = phase == .starting ? Double(progress.active.rawValue + 1) / steps : 1
+        return ZStack {
+            Circle().stroke(Color.white.opacity(0.14), lineWidth: 6)
+            Circle().trim(from: 0, to: fraction)
+                .stroke(SparkTheme.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: fraction)
+        }
+        .frame(width: 130, height: 130)
+        .accessibilityHidden(true)
     }
 
     private func movingTitle(landscape: Bool, source: CGRect?, motion: Bool) -> some View {
         Text(artwork.title)
-            .font(landscape ? .title2.bold() : .largeTitle.bold())
+            .font(landscape ? .title2.weight(.heavy) : .largeTitle.weight(.heavy))
             .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
             .truncationMode(.tail)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .visualEffect { content, geometry in
                 let target = geometry.frame(in: .named("launchWindow"))
                 let start = source ?? target
                 return content.offset(x: motion ? start.minX - target.minX : 0,
                                       y: motion ? start.minY - target.minY : 0)
             }
+            .frame(maxWidth: .infinity, alignment: .center)
             .accessibilityAddTraits(.isHeader)
             .accessibilityIdentifier("playerLaunchTitle")
     }
@@ -109,7 +156,7 @@ import SwiftUI
                              source: CGRect?, motion: Bool) -> some View {
         ArtworkImage(image: cover, title: "", position: artwork.coverY, fit: artwork.coverFits)
             .frame(width: width, height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: 26))
             .visualEffect { content, geometry in
                 let target = geometry.frame(in: .named("launchWindow"))
                 let start = source ?? target
@@ -122,8 +169,10 @@ import SwiftUI
             .accessibilityIdentifier("playerLaunchCover")
     }
 
-    private func launchDetails() -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+    /// The launch steps, the runtime's own status line and the memory meter.
+    private var progressCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if phase == .starting { SparkLaunchStepsView(active: progress.active) }
             HStack(spacing: 10) {
                 Text(phase == .starting ? session.statusSummary : phase.title)
                     .font(.subheadline).foregroundStyle(.white.opacity(0.8))
@@ -132,61 +181,136 @@ import SwiftUI
             }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("playerLaunchPanel")
-            if phase == .starting { SparkLaunchStepsView(active: progress.active) }
             if let memory { RuntimeMemoryReadout(memory: memory) }
-            if let message = phase.message {
-                Text(message).font(.callout).foregroundStyle(.white.opacity(0.8))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if phase == .failed, let diagnosis {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Likely cause").font(.caption.weight(.bold)).foregroundStyle(SparkTheme.problem)
-                    Text(diagnosis.cause)
-                        .font(.callout.weight(.semibold)).foregroundStyle(.white)
-                    Text(diagnosis.line)
-                        .font(.caption.monospaced()).foregroundStyle(.white.opacity(0.8))
-                        .lineLimit(3)
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("playerLaunchDiagnosis")
-            }
-            if !phase.isBusy && phase != .playing {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 12) { recoveryActions }
-                    VStack(alignment: .leading, spacing: 12) { recoveryActions }
-                }
-                .padding(.top, 8)
-            }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 26))
+        .background(SparkTheme.surface.opacity(0.85), in: RoundedRectangle(cornerRadius: 26))
         .overlay {
             RoundedRectangle(cornerRadius: 26).strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
                 .allowsHitTesting(false)
         }
-        .task(id: phase) {
-            // Read the logs off the main thread, and only after a failed launch.
-            guard phase == .failed else { diagnosis = nil; return }
-            diagnosis = await Task.detached(priority: .utility) { SparkLaunchDiagnosis.latest() }.value
-            // Keep the cause with the game so the library can show it later.
-            if let diagnosis { SparkGameStatusStore.shared.record(.stopped(diagnosis.cause), for: session.gameID) }
+    }
+
+    /// Live Log and Cancel, only while the game is still starting.
+    @ViewBuilder private var startingActions: some View {
+        if phase == .starting {
+            HStack(spacing: 10) {
+                Button(action: viewLogs) {
+                    Label("Live Log", systemImage: "doc.text").font(.headline)
+                        .frame(maxWidth: .infinity).frame(height: 54)
+                }
+                .buttonStyle(SparkPillButtonStyle())
+                Button(action: close) {
+                    Text("Cancel").font(.headline)
+                        .frame(maxWidth: .infinity).frame(height: 54)
+                }
+                .buttonStyle(SparkPillButtonStyle())
+                .accessibilityLabel("Cancel launch")
+            }
         }
     }
 
+    // MARK: Stopped
+
+    private var headline: String {
+        phase == .failed ? (diagnosis?.cause ?? phase.title) : phase.title
+    }
+
+    private var chipText: String {
+        switch phase {
+        case .failed: "\(artwork.title) stopped"
+        case .stopped: "\(artwork.title) closed"
+        default: artwork.title
+        }
+    }
+
+    private var chipTone: Color {
+        phase == .failed ? SparkTheme.problem : phase == .stopped ? SparkTheme.good : SparkTheme.accent
+    }
+
+    /// What happened, the log line behind it, how far the launch got, and what to do next.
+    private var stoppedContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Button(action: close) {
+                Image(systemName: "chevron.left").font(.body.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .background(Color.black.opacity(0.45), in: Circle())
+                    .overlay { Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 1) }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back to Library")
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Image(systemName: phase == .stopped ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .accessibilityHidden(true)
+                    Text(chipText).lineLimit(1)
+                }
+                .font(.caption.weight(.bold)).foregroundStyle(chipTone)
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .background(Color.black.opacity(0.5), in: Capsule())
+                Text(headline).font(.title.weight(.heavy))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("playerLaunchStatus")
+                if let message = phase.message {
+                    Text(message).font(.callout).foregroundStyle(.white.opacity(0.8))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if phase == .failed, let diagnosis {
+                SparkCard(title: "The Line That Matters") {
+                    Text(diagnosis.line).font(.footnote.monospaced())
+                        .foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(4).padding(.vertical, 12)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("playerLaunchDiagnosis")
+            }
+            if phase == .failed {
+                SparkCard(title: "How Far It Got") {
+                    ForEach(SparkLaunchStep.allCases, id: \.rawValue) { step in
+                        reachedRow(step.title, state: step.rawValue < progress.active.rawValue ? 0 : step == progress.active ? 1 : 2)
+                    }
+                }
+            }
+            Spacer(minLength: 8)
+            recoveryActions
+        }
+    }
+
+    /// One launch step in the summary: 0 passed, 1 stopped here, 2 not reached.
+    private func reachedRow(_ title: String, state: Int) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: state == 0 ? "checkmark" : state == 1 ? "xmark" : "circle")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(state == 0 ? SparkTheme.good : state == 1 ? SparkTheme.problem : Color.white.opacity(0.35))
+                .frame(width: 22)
+                .accessibilityHidden(true)
+            Text(state == 1 ? "\(title) (stopped here)" : title)
+                .font(.callout.weight(state == 1 ? .bold : .medium))
+                .foregroundStyle(state == 1 ? SparkTheme.problem : state == 0 ? Color.white : Color.white.opacity(0.5))
+        }
+        .frame(minHeight: 40)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(state == 0 ? "Passed" : state == 1 ? "Stopped here" : "Not reached")
+    }
+
     private var recoveryActions: some View {
-        Group {
-            Button("View Logs", systemImage: "doc.text", action: viewLogs).libraryGlass(prominent: true)
-            Button("Back to Library", action: close).libraryGlass()
+        VStack(spacing: 10) {
             if !shareableLogs.isEmpty {
                 ShareLink(items: shareableLogs) {
-                    Label("Share Logs", systemImage: "square.and.arrow.up")
+                    Label("Share Logs", systemImage: "square.and.arrow.up").font(.headline)
+                        .frame(maxWidth: .infinity).frame(height: 56)
                 }
-                .libraryGlass()
+                .buttonStyle(SparkPillButtonStyle(prominent: true))
             }
+            HStack(spacing: 10) {
+                Button("View Logs", systemImage: "doc.text", action: viewLogs).libraryGlass()
+                Button("Back to Library", action: close).libraryGlass()
+            }
+            .frame(minHeight: 44)
         }
-        .frame(minHeight: 44)
     }
 
     /// The app and runtime logs that exist, for one-tap sharing after a stop.

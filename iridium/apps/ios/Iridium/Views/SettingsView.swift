@@ -8,87 +8,100 @@ struct SettingsView: View {
     @State private var artworkSettings = false
 
     var body: some View {
-        List {
-            Section {
-                MenuNavigationLink {
-                    LaunchSupportSettingsView(viewModel: viewModel)
-                } label: {
-                    settingRow(
-                        title: "Launch Support",
-                        summary: launchSupportSummary,
-                        systemImage: "bolt.fill",
-                        tone: viewModel.jitStatus == .ready ? .green : .orange
-                    )
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .bottom) {
+                    Text("Settings").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        HStack(spacing: 6) {
+                            SparkMark(size: 15)
+                            Text("SPARK").font(.caption.weight(.heavy)).tracking(2.4).foregroundStyle(SparkTheme.accent)
+                        }
+                        Text("Built on Iridium and Madeira").font(.caption2).foregroundStyle(Color.white.opacity(0.6))
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Spark, built on Iridium and Madeira")
                 }
-
-                MenuNavigationLink {
-                    RuntimeSettingsView(viewModel: viewModel)
-                } label: {
-                    settingRow(
-                        title: "Runtime",
-                        summary: viewModel.activeRuntimeHealth.status.displayName,
-                        systemImage: "gearshape.2.fill",
-                        tone: runtimeTone
-                    )
-                }
-
-                MenuNavigationLink {
-                    InputSettingsView()
-                } label: {
-                    settingRow(
-                        title: "Input",
-                        summary: "Touch controller, mouse, and keyboard",
-                        systemImage: "gamecontroller.fill",
-                        tone: .blue
-                    )
-                }
-
-                MenuNavigationLink {
-                    StorageSettingsView(viewModel: viewModel)
-                } label: {
-                    settingRow(
-                        title: "Storage",
-                        summary: "Device capacity and available space",
-                        systemImage: "internaldrive.fill",
-                        tone: storageTone
-                    )
-                }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
-
-            Section("Library") {
-                MenuButton("Artwork Settings") { artworkSettings = true }
-                MenuNavigationLink("Recent Activity") { ActivityView(viewModel: viewModel) }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
-
-            Section("Support") {
-                MenuNavigationLink {
-                    DiagnosticsSettingsView(viewModel: viewModel)
-                } label: {
-                    settingRow(
-                        title: "Diagnostics",
-                        summary: "Logs and technical status",
-                        systemImage: "stethoscope",
-                        tone: .blue
-                    )
-                }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
-
-            Section("About") {
-                HStack(spacing: 12) {
-                    SparkMark(size: 26)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Spark").font(.headline)
-                        Text("Built on Iridium and Madeira").font(.footnote).foregroundStyle(.secondary)
+                SparkCard(title: "Runtime") {
+                    MenuNavigationLink {
+                        LaunchSupportSettingsView(viewModel: viewModel)
+                    } label: {
+                        settingRow(title: "Launch Support", summary: launchSupportSummary, systemImage: "bolt.fill",
+                                   tone: viewModel.jitStatus == .ready ? .green : .orange)
+                    }
+                    SparkDivider()
+                    MenuNavigationLink {
+                        RuntimeSettingsView(viewModel: viewModel)
+                    } label: {
+                        settingRow(title: "Runtime", summary: viewModel.activeRuntimeHealth.status.displayName,
+                                   systemImage: "gearshape.2.fill", tone: runtimeTone)
+                    }
+                    if viewModel.usesMadeiraRuntime {
+                        SparkDivider()
+                        MenuNavigationLink {
+                            SparkConfigEditorView(title: "madeira.cfg", file: SparkConfigEditorView.globalConfig)
+                        } label: {
+                            settingRow(title: "Global Config", summary: "madeira.cfg, applied to every game",
+                                       systemImage: "doc.plaintext.fill", tone: SparkTheme.accent)
+                        }
                     }
                 }
-                .accessibilityElement(children: .combine)
-                MenuValue("Version", value: version)
-                Text("Manage launch support, runtime, input, artwork, and storage.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+                SparkCard(title: "Play") {
+                    MenuNavigationLink {
+                        InputSettingsView()
+                    } label: {
+                        settingRow(title: "Input", summary: "Touch controller, mouse, and keyboard",
+                                   systemImage: "gamecontroller.fill", tone: .blue)
+                    }
+                    SparkDivider()
+                    MenuNavigationLink {
+                        StorageSettingsView(viewModel: viewModel)
+                    } label: {
+                        settingRow(title: "Storage", summary: "Device capacity and available space",
+                                   systemImage: "internaldrive.fill", tone: storageTone)
+                    }
+                }
+                SparkCard(title: "Library") {
+                    MenuButton { artworkSettings = true } label: {
+                        settingRow(title: "Artwork Settings", summary: "Cover and background art source",
+                                   systemImage: "photo.fill", tone: .purple, chevron: false)
+                    }
+                    SparkDivider()
+                    MenuNavigationLink {
+                        ActivityView(viewModel: viewModel)
+                    } label: {
+                        settingRow(title: "Recent Activity", summary: "Imports, downloads and launches",
+                                   systemImage: "clock.fill", tone: .teal)
+                    }
+                }
+                SparkCard(title: "Support") {
+                    MenuNavigationLink {
+                        SparkLogsView()
+                    } label: {
+                        settingRow(title: "Launch Log", summary: "Latest launch steps and log sharing",
+                                   systemImage: "list.bullet.rectangle.fill", tone: SparkTheme.accent)
+                    }
+                    SparkDivider()
+                    MenuNavigationLink {
+                        DiagnosticsSettingsView(viewModel: viewModel)
+                    } label: {
+                        settingRow(title: "Diagnostics", summary: "Logs and technical status",
+                                   systemImage: "stethoscope", tone: .blue)
+                    }
+                }
+                SparkCard(title: "About") {
+                    SparkRow(title: "Version", systemImage: "info.circle.fill", value: version, chevron: false)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 32)
         }
-        .iridiumListChrome(onBack: onBack)
+        .scrollIndicators(.hidden)
+        .background(SparkTheme.ground.ignoresSafeArea())
+        .preferredColorScheme(.dark)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .controllerMenuScope(onBack: onBack)
         .toolbar {
             if let onBack {
                 ToolbarItem(placement: .topBarLeading) {
@@ -96,6 +109,8 @@ struct SettingsView: View {
                         .labelStyle(.iconOnly).keyboardShortcut(.cancelAction)
                 }
             }
+            // The page draws its own large title, so the bar's copy is left empty.
+            ToolbarItem(placement: .principal) { Text("").accessibilityHidden(true) }
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
@@ -139,7 +154,8 @@ struct SettingsView: View {
         title: String,
         summary: String,
         systemImage: String,
-        tone: Color
+        tone: Color,
+        chevron: Bool = true
     ) -> some View {
         HStack(spacing: 13) {
             Image(systemName: systemImage)
@@ -149,13 +165,19 @@ struct SettingsView: View {
                 .background(tone.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+                Text(title).font(.body.weight(.medium)).foregroundStyle(Color.white)
                 Text(summary)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
+            }
+            Spacer(minLength: 8)
+            if chevron {
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.35)).accessibilityHidden(true)
             }
         }
-        .padding(.vertical, 3)
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 }

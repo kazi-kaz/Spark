@@ -160,7 +160,7 @@ class LaunchPresentationTests(unittest.TestCase):
         menu = player.split('accessibilityLabel("Player Menu")', 1)[1].split('.overlay(alignment: .bottomLeading)', 1)[0]
         self.assertIn('Button("Cancel Launch"', menu)
         self.assertIn('if launchPresentation == .starting', menu)
-        self.assertNotIn('Button("Cancel', art)
+        self.assertIn('Text("Cancel")', art)  # Spark's start screen offers Cancel beside Live Log.
         self.assertIn("View Logs", art)
         self.assertIn("Back to Library", art)
 
@@ -192,7 +192,9 @@ class LaunchPresentationTests(unittest.TestCase):
         self.assertIn("source: sourceTitle", art)
         self.assertIn("source: sourceCover", art)
         self.assertIn('geometry.frame(in: .named("launchWindow"))', art)
-        self.assertLess(art.index("movingTitle(landscape: false"), art.index("movingCover(cover, width:", art.index("movingTitle(landscape: false")))
+        # Spark's start screen puts the cover inside a progress ring above the title; both still move from the library.
+        self.assertIn("movingCover(cover, width: 96, height: 96, source: sourceCover", art)
+        self.assertIn("movingTitle(landscape: landscape, source: sourceTitle", art)
         self.assertIn(".snappy(duration: RuntimeLaunchMotion.artworkMoveDuration, extraBounce: 0)", transition)
         self.assertLess(transition.index("chrome?.alpha = 0"), transition.index("self.motionState.settle(animated: !context.transitionWasCancelled)"))
         self.assertNotIn("motionState.detailsVisible ? 1 : 0", art) # Status stays visible if the transition is interrupted.
