@@ -8,6 +8,7 @@ struct SparkGamePerformanceView: View {
     /// nil means the game follows the app-wide JIT Memory Limit.
     @State private var pool: Int?
     @State private var saveError: String?
+    @State private var looksLikeUnreal = false
 
     private var root: URL { URL(fileURLWithPath: game.installPath) }
 
@@ -27,6 +28,10 @@ struct SparkGamePerformanceView: View {
                 }
                 Text("Applies to this game's next launch and is saved to its iridium.cfg. Large Unreal games usually need 512 MB.")
                     .font(.footnote).foregroundStyle(.secondary)
+                if looksLikeUnreal && (pool ?? 0) < 512 {
+                    Text("This looks like an Unreal Engine game. 512 MB usually works best.")
+                        .font(.footnote).foregroundStyle(SparkTheme.accent)
+                }
                 if let saveError {
                     Text(saveError).font(.footnote).foregroundStyle(SparkTheme.problem)
                 }
@@ -43,7 +48,28 @@ struct SparkGamePerformanceView: View {
             }
         }
         .iridiumListChrome().navigationTitle("Performance")
-        .onAppear { pool = MadeiraGameConfig.jitPoolMB(in: MadeiraGameConfig.locate(gameRoot: root)) }
+        .onAppear {
+            pool = MadeiraGameConfig.jitPoolMB(in: MadeiraGameConfig.locate(gameRoot: root))
+            looksLikeUnreal = Self.isUnreal(root)
+        }
+    }
+
+    /// Unreal games ship an Engine folder or a "-Win64-Shipping.exe" program.
+    private static func isUnreal(_ root: URL) -> Bool {
+        let files = FileManager.default
+        var isFolder: ObjCBool = false
+        if files.fileExists(atPath: root.appendingPathComponent("Engine").path, isDirectory: &isFolder),
+           isFolder.boolValue { return true }
+        guard let walker = files.enumerator(at: root, includingPropertiesForKeys: nil,
+                                            options: [.skipsHiddenFiles]) else { return false }
+        var seen = 0
+        for case let url as URL in walker {
+            seen += 1
+            if seen > 4000 { break }
+            if walker.level > 4 { walker.skipDescendants(); continue }
+            if url.lastPathComponent.hasSuffix("-Win64-Shipping.exe") { return true }
+        }
+        return false
     }
 
     private func choose(_ mb: Int?) {

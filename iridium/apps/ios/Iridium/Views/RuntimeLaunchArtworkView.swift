@@ -10,6 +10,7 @@ import SwiftUI
     let memory: RuntimeMemorySnapshot?
     @State private var artwork: RuntimeLaunchArtworkSnapshot
     @State private var diagnosis: SparkLaunchDiagnosis?
+    @ObservedObject private var progress = SparkLaunchProgress.shared
     @ObservedObject var motionState: RuntimeLaunchMotionState
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -131,6 +132,7 @@ import SwiftUI
             }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("playerLaunchPanel")
+            if phase == .starting { SparkLaunchStepsView(active: progress.active) }
             if let memory { RuntimeMemoryReadout(memory: memory) }
             if let message = phase.message {
                 Text(message).font(.callout).foregroundStyle(.white.opacity(0.8))
@@ -160,6 +162,8 @@ import SwiftUI
             // Read the logs off the main thread, and only after a failed launch.
             guard phase == .failed else { diagnosis = nil; return }
             diagnosis = await Task.detached(priority: .utility) { SparkLaunchDiagnosis.latest() }.value
+            // Keep the cause with the game so the library can show it later.
+            if let diagnosis { SparkGameStatusStore.shared.record(.stopped(diagnosis.cause), for: session.gameID) }
         }
     }
 
@@ -209,8 +213,9 @@ struct RuntimeMemoryReadout: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel("App RAM: \(used)")
             if let available = memory.availableBytes {
+                // iOS closes the app when little is left, so warn by color before that.
                 ProgressView(value: Double(memory.usedBytes), total: max(1, Double(memory.usedBytes) + Double(available)))
-                    .tint(.white)
+                    .tint(available < 300_000_000 ? SparkTheme.problem : available < 700_000_000 ? SparkTheme.accent : Color.white)
                     .accessibilityLabel("App memory use")
                 let remaining = ByteCountFormatter.string(fromByteCount: Int64(clamping: available), countStyle: .memory)
                 Text("Available: \(remaining)")

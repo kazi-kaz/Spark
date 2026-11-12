@@ -140,6 +140,7 @@ let package = Package(
                 "LiveContainerIntegration.swift",
                 "SparkGameStatus.swift",
                 "SparkLaunchDiagnosis.swift",
+                "SparkLaunchProgress.swift",
                 "Views",
             ],
             sources: ["RuntimeLogCapture.swift"]

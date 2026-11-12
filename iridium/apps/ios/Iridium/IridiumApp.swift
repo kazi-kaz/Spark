@@ -41,6 +41,7 @@ struct IridiumApp: App {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .tint(SparkTheme.accent)
+            .onAppear { _ = SparkLaunchProgress.shared }
             .task {
                 guard viewModel == nil else {
                     return

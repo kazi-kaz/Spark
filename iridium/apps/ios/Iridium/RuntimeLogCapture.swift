@@ -64,7 +64,14 @@ enum RuntimeLogCapture {
         )
     }
 
+    /// Posted with the line as its object for every "[Launch] ..." line, so
+    /// the interface can follow launch progress without reading the log file.
+    static let launchLineNotification = Notification.Name("SparkLaunchLine")
+
     static func writeLine(_ line: String) {
+        if line.hasPrefix("[Launch] ") {
+            NotificationCenter.default.post(name: launchLineNotification, object: line)
+        }
         guard let activeLogFileURL else {
             print(line)
             return
