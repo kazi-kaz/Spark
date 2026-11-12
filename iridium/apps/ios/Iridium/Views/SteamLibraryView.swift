@@ -462,7 +462,7 @@ private struct SteamPanel: ViewModifier {
 private struct SteamCard: ViewModifier {
     func body(content: Content) -> some View {
         content.padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(Color(red: 0.078, green: 0.086, blue: 0.106), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .padding(.vertical, 4)
             .listRowBackground(Color.clear)
     }
@@ -506,7 +506,7 @@ private struct SteamDownloadOptionsView: View {
                     .menuFocusable(adjust: { options.maxDownloads = min(8, max(1, options.maxDownloads + $0)) })
             } footer: {
                 Text("Choose which version and language to download.")
-            }.listRowBackground(Rectangle().fill(.regularMaterial)).listRowSeparator(.hidden)
+            }.listRowBackground(Rectangle().fill(Color(red: 0.078, green: 0.086, blue: 0.106))).listRowSeparator(.hidden)
             Section {
                 MenuToggle("Include DLC", isOn: $options.includeDlc)
                 if options.includeDlc, let ids = details?.dlcAppIds, !ids.isEmpty {
@@ -522,7 +522,7 @@ private struct SteamDownloadOptionsView: View {
                 }
             } header: { Text("Additional Content") }
             footer: { Text("Only content owned by your Steam account can be downloaded.") }
-            .listRowBackground(Rectangle().fill(.regularMaterial)).listRowSeparator(.hidden)
+            .listRowBackground(Rectangle().fill(Color(red: 0.078, green: 0.086, blue: 0.106))).listRowSeparator(.hidden)
             Section {
                 MenuButton("Add to Download Queue") {
                     var selected = options

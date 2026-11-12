@@ -114,3 +114,18 @@ struct SparkPillButtonStyle: ButtonStyle {
         }
     }
 }
+
+/// Full-width capsule actions for the in-game menu.
+struct SparkMenuButtonStyle: ButtonStyle {
+    var destructive = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.85)
+            .frame(maxWidth: .infinity, minHeight: 46)
+            .foregroundStyle(destructive ? SparkTheme.onAccent : Color.white)
+            .background(destructive ? SparkTheme.problem : Color.white.opacity(0.12), in: Capsule())
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}

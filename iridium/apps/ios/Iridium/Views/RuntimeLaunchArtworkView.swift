@@ -140,7 +140,8 @@ import SwiftUI
             }
             if phase == .failed, let diagnosis {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Likely cause: \(diagnosis.cause)")
+                    Text("Likely cause").font(.caption.weight(.bold)).foregroundStyle(SparkTheme.problem)
+                    Text(diagnosis.cause)
                         .font(.callout.weight(.semibold)).foregroundStyle(.white)
                     Text(diagnosis.line)
                         .font(.caption.monospaced()).foregroundStyle(.white.opacity(0.8))
@@ -157,6 +158,13 @@ import SwiftUI
                 }
                 .padding(.top, 8)
             }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 26))
+        .overlay {
+            RoundedRectangle(cornerRadius: 26).strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                .allowsHitTesting(false)
         }
         .task(id: phase) {
             // Read the logs off the main thread, and only after a failed launch.

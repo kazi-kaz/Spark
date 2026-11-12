@@ -29,7 +29,7 @@ struct IridiumPageSurface: ViewModifier {
             .scrollContentBackground(.hidden)
             .background {
                 ZStack {
-                    Color.black
+                    Color(red: 0.031, green: 0.035, blue: 0.047)   // Spark ground (#08090C)
                     if !reduceTransparency, let id = gameID ?? artwork.backdropGameID,
                        let image = artwork.displayImage(artwork.appearance(id).background) {
                         ArtworkImage(image: image, title: "", position: artwork.appearance(id).backgroundY)

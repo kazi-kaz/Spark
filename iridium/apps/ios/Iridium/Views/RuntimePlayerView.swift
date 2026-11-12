@@ -180,43 +180,63 @@ struct RuntimePlayerView: View {
                             }
                             if controlsVisible {
                                 ScrollView {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Button("Resume", systemImage: "play") { controlsVisible = false }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text(session.gameTitle).font(.title3.weight(.heavy)).lineLimit(1)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    if let memory {
+                                        RuntimeMemoryReadout(memory: memory)
+                                            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+                                    }
+                                    HStack(spacing: 8) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Frame rate").font(.caption2).foregroundStyle(.secondary)
+                                            Text("\(framesPerSecond, specifier: "%.1f") FPS")
+                                                .font(.callout.monospacedDigit().weight(.semibold))
+                                        }
+                                        .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Frame time").font(.caption2).foregroundStyle(.secondary)
+                                            Text("\(timing.milliseconds, specifier: "%.1f") ms")
+                                                .font(.callout.monospacedDigit().weight(.semibold))
+                                        }
+                                        .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+                                    }
+                                    Text("1% low \(timing.low.map { String(format: "%.1f", $0) } ?? "—") · high \(timing.high.map { String(format: "%.1f", $0) } ?? "—")")
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 8) {
+                                        Button("Resume", systemImage: "play") { controlsVisible = false }
+                                        Button("View Log", systemImage: "doc.text") { deviceKeyboardVisible = false; isShowingDiagnostics = true; controlsVisible = false }
+                                    }
                                     Button("Input Settings", systemImage: "gamecontroller") {
                                         deviceKeyboardVisible = false
                                         isShowingControls = true
                                         controlsVisible = false
                                     }
-                                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Label("Performance", systemImage: "gauge.with.dots.needle.67percent")
-                                        Text("\(framesPerSecond, specifier: "%.1f") FPS · \(timing.milliseconds, specifier: "%.1f") ms")
-                                            .font(.caption.monospacedDigit())
-                                            .foregroundStyle(.secondary)
-                                        Text("1% low \(timing.low.map { String(format: "%.1f", $0) } ?? "—") · high \(timing.high.map { String(format: "%.1f", $0) } ?? "—")")
-                                            .font(.caption2.monospacedDigit())
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(.vertical, 4)
                                     Toggle("Pin Performance HUD", isOn: $showPerformance).frame(minHeight: 44)
-                                    Button("View Log", systemImage: "doc.text") { deviceKeyboardVisible = false; isShowingDiagnostics = true; controlsVisible = false }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        .tint(SparkTheme.accent)
                                     if launchPresentation == .starting {
                                         Button("Cancel Launch", systemImage: "xmark", role: .destructive) {
                                             deviceKeyboardVisible = false
                                             controlsVisible = false
                                             viewModel.dismissActiveRuntimePlayer()
-                                        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        }
+                                        .buttonStyle(SparkMenuButtonStyle(destructive: true))
                                     } else {
-                                        Button("Close Game", systemImage: "xmark", role: .destructive) { deviceKeyboardVisible = false; isConfirmingClose = true }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        Button("Close Game", systemImage: "xmark", role: .destructive) { deviceKeyboardVisible = false; isConfirmingClose = true }
+                                            .buttonStyle(SparkMenuButtonStyle(destructive: true))
                                     }
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(SparkMenuButtonStyle())
                                 .controlSize(.large)
-                                .frame(width: 250, alignment: .leading)
+                                .frame(width: 290, alignment: .leading)
                                 .padding(16)
                                 }
                                 .scrollBounceBehavior(.basedOnSize)
-                                .frame(width: 282, height: min(390, max(100, safeGeometry.size.height - safeGeometry.safeAreaInsets.top - safeGeometry.safeAreaInsets.bottom - 80)))
+                                .frame(width: 322, height: min(480, max(100, safeGeometry.size.height - safeGeometry.safeAreaInsets.top - safeGeometry.safeAreaInsets.bottom - 80)))
                                 .modifier(PlayerGlassPanel())
                                 .accessibilityIdentifier("playerMenuPanel")
                                 .contentShape(Rectangle()).onTapGesture {}
