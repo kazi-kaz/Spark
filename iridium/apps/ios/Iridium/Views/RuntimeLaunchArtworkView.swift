@@ -9,6 +9,7 @@ import SwiftUI
     let close: () -> Void
     let memory: RuntimeMemorySnapshot?
     @State private var artwork: RuntimeLaunchArtworkSnapshot
+    @State private var diagnosis: SparkLaunchDiagnosis?
     @ObservedObject var motionState: RuntimeLaunchMotionState
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -135,6 +136,18 @@ import SwiftUI
                 Text(message).font(.callout).foregroundStyle(.white.opacity(0.8))
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if phase == .failed, let diagnosis {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Likely cause: \(diagnosis.cause)")
+                        .font(.callout.weight(.semibold)).foregroundStyle(.white)
+                    Text(diagnosis.line)
+                        .font(.caption.monospaced()).foregroundStyle(.white.opacity(0.8))
+                        .lineLimit(3)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("playerLaunchDiagnosis")
+            }
             if !phase.isBusy && phase != .playing {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 12) { recoveryActions }
@@ -143,14 +156,31 @@ import SwiftUI
                 .padding(.top, 8)
             }
         }
+        .task(id: phase) {
+            // Read the logs off the main thread, and only after a failed launch.
+            guard phase == .failed else { diagnosis = nil; return }
+            diagnosis = await Task.detached(priority: .utility) { SparkLaunchDiagnosis.latest() }.value
+        }
     }
 
     private var recoveryActions: some View {
         Group {
             Button("View Logs", systemImage: "doc.text", action: viewLogs).libraryGlass(prominent: true)
             Button("Back to Library", action: close).libraryGlass()
+            if !shareableLogs.isEmpty {
+                ShareLink(items: shareableLogs) {
+                    Label("Share Logs", systemImage: "square.and.arrow.up")
+                }
+                .libraryGlass()
+            }
         }
         .frame(minHeight: 44)
+    }
+
+    /// The app and runtime logs that exist, for one-tap sharing after a stop.
+    private var shareableLogs: [URL] {
+        guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return [] }
+        return RuntimeDiagnosticLogFiles.existing(in: documents)
     }
 
     private func backdrop(in bounds: CGRect) -> some View {

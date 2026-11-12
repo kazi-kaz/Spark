@@ -139,6 +139,7 @@ let package = Package(
                 "JITBootstrapAssets.swift",
                 "LiveContainerIntegration.swift",
                 "SparkGameStatus.swift",
+                "SparkLaunchDiagnosis.swift",
                 "Views",
             ],
             sources: ["RuntimeLogCapture.swift"]
