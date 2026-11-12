@@ -31,6 +31,16 @@ struct SparkGamePerformanceView: View {
                     Text(saveError).font(.footnote).foregroundStyle(SparkTheme.problem)
                 }
             }
+            Section("Advanced") {
+                MenuNavigationLink {
+                    SparkConfigEditorView(title: "iridium.cfg",
+                                          file: MadeiraGameConfig.locate(gameRoot: root) ?? root.appendingPathComponent(MadeiraGameConfig.fileName))
+                } label: {
+                    Label("Edit This Game's Config", systemImage: "doc.plaintext")
+                }
+                Text("Every setting and env. line for this game only. It overrides madeira.cfg.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
         }
         .iridiumListChrome().navigationTitle("Performance")
         .onAppear { pool = MadeiraGameConfig.jitPoolMB(in: MadeiraGameConfig.locate(gameRoot: root)) }

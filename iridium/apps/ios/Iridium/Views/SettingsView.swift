@@ -530,6 +530,13 @@ private struct RuntimeLaunchPreferences: View {
                 Text("Spark can use a smaller pool when memory is limited. Some games need more code memory.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
+            Section("Global Config") {
+                MenuNavigationLink { SparkConfigEditorView(title: "madeira.cfg", file: SparkConfigEditorView.globalConfig) } label: {
+                    Label("Edit madeira.cfg", systemImage: "doc.plaintext")
+                }
+                Text("Settings and env. lines applied to every game before Wine starts.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             Section("Debug Trace") {
                 ForEach([false, true], id: \.self) { enabled in
                     MenuButton { verboseTrace = enabled } label: {
