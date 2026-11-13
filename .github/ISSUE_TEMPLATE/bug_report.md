@@ -13,9 +13,10 @@ Steps:
 
 ## Environment
 
-Iridium version or commit, device model, OS, game/version, and input method:
+Spark build or commit, device model, iOS version, game and version, and input method:
 
 ## Evidence
 
-Redacted error text or screenshots. Do not upload game files, pairing records,
+The likely cause and log line from the stopped screen, and the logs from
+Share Logs. Redact them first. Do not upload game files, pairing records,
 certificates, serial numbers, account details, or unredacted device logs.

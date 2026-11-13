@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="Spark: Windows games on iPhone and iPad">
+  <defs>
+    <radialGradient id="warmth" cx="0.2" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFB627" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#FFB627" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tile" cx="0.3" cy="0" r="1.2">
+      <stop offset="0" stop-color="#2B303E"/>
+      <stop offset="0.62" stop-color="#0B0D12"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="360" rx="28" fill="#08090C"/>
+  <rect width="1280" height="360" rx="28" fill="url(#warmth)"/>
+  <rect x="100" y="80" width="200" height="200" rx="46" fill="url(#tile)"/>
+  <rect x="100.5" y="80.5" width="199" height="199" rx="45.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.12"/>
+  <g transform="translate(130 110) scale(1.4)">
+    <path d="M60 6L22 56h24l-8 38 40-52H53z" fill="#FFB627"/>
+    <path d="M60 6L22 56h24l7-14z" fill="#FFFFFF" fill-opacity="0.30"/>
+  </g>
+  <g font-family="'SF Pro Display', -apple-system, 'Segoe UI', Inter, 'Helvetica Neue', Arial, sans-serif">
+    <text x="364" y="200" font-size="104" font-weight="800" letter-spacing="20" fill="#F2F4F7">SPARK</text>
+    <text x="368" y="252" font-size="32" font-weight="600" fill="#C5CBD6">Windows games on iPhone and iPad</text>
+    <text x="368" y="294" font-size="22" font-weight="500" fill="#A3ABB8">A fork of Iridium, built on Madeira</text>
+  </g>
+</svg>
