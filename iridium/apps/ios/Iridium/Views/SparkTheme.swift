@@ -17,6 +17,16 @@ enum SparkTheme {
     static let problem = Color(red: 1.0, green: 0.604, blue: 0.522)
     /// Text drawn on top of the accent (#17120D).
     static let onAccent = Color(red: 0.090, green: 0.071, blue: 0.051)
+
+    // Shared with the kashy.dev site's dark theme so the two feel related.
+    /// Secondary text (#A1A1A6). 7:1 or better on the ground and card surface.
+    static let inkSoft = Color(red: 0.631, green: 0.631, blue: 0.651)
+    /// Tertiary text and chevrons (#8E8E93). Not for essential text on cards.
+    static let inkFaint = Color(red: 0.557, green: 0.557, blue: 0.576)
+    /// Hairline edge that gives cards a frosted-glass rim (white at 9%).
+    static let hairline = Color.white.opacity(0.09)
+    /// Corner radius for cards, matching the site's 22pt.
+    static let cardRadius: CGFloat = 22
 }
 
 /// The Spark lightning bolt, drawn in a centered square inside `rect`.

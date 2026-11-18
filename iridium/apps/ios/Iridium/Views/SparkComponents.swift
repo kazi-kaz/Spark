@@ -9,13 +9,16 @@ struct SparkCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             if let title {
                 Text(title).font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color.white.opacity(0.65)).padding(.leading, 6)
+                    .foregroundStyle(SparkTheme.inkSoft).padding(.leading, 6)
                     .accessibilityAddTraits(.isHeader)
             }
             VStack(alignment: .leading, spacing: 0) { content() }
                 .padding(.horizontal, 16).padding(.vertical, 6)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(SparkTheme.surface, in: RoundedRectangle(cornerRadius: 24))
+                .background(SparkTheme.surface, in: RoundedRectangle(cornerRadius: SparkTheme.cardRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: SparkTheme.cardRadius, style: .continuous)
+                    .strokeBorder(SparkTheme.hairline, lineWidth: 1))
+                .shadow(color: .black.opacity(0.35), radius: 12, y: 6)
         }
     }
 }
@@ -38,11 +41,11 @@ struct SparkRow: View {
             Text(title).font(.body.weight(.medium)).foregroundStyle(Color.white)
             Spacer(minLength: 8)
             if let value {
-                Text(value).font(.subheadline).foregroundStyle(Color.white.opacity(0.6)).lineLimit(1)
+                Text(value).font(.subheadline).foregroundStyle(SparkTheme.inkSoft).lineLimit(1)
             }
             if chevron {
                 Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
-                    .foregroundStyle(Color.white.opacity(0.35)).accessibilityHidden(true)
+                    .foregroundStyle(SparkTheme.inkFaint).accessibilityHidden(true)
             }
         }
         .frame(minHeight: 50)
@@ -105,12 +108,16 @@ struct SparkPillButtonStyle: ButtonStyle {
         let configuration: ButtonStyleConfiguration
         let prominent: Bool
         @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             configuration.label
                 .foregroundStyle(prominent && isEnabled ? SparkTheme.onAccent : Color.white.opacity(isEnabled ? 1 : 0.5))
                 .background(prominent && isEnabled ? SparkTheme.accent : SparkTheme.raised, in: Capsule())
                 .opacity(configuration.isPressed ? 0.75 : 1)
+                .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
+                .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7),
+                           value: configuration.isPressed)
         }
     }
 }

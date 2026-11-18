@@ -63,6 +63,13 @@ use them instead of styling a screen from scratch.
 | `SparkTheme.surface` | `#14161B` | Cards |
 | `SparkTheme.raised` | `#1C1F26` | Secondary buttons and controls |
 | `SparkTheme.onAccent` | `#17120D` | Text on amber |
+| `SparkTheme.inkSoft` | `#A1A1A6` | Secondary text and card headings |
+| `SparkTheme.inkFaint` | `#8E8E93` | Chevrons and other non-essential marks |
+| `SparkTheme.hairline` | white at 9% | Rim on cards; `SparkTheme.cardRadius` is 22pt |
+
+These soft greys, the hairline rim and the 22pt radius match the dark theme of
+the author's website, so the two read as one family. Spark keeps its own amber
+accent.
 
 - **Components:** `SparkCard` groups rows under a heading, `SparkRow` is an icon
   row with an optional value and chevron, `SparkPillButtonStyle` makes capsule
