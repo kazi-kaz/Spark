@@ -212,7 +212,7 @@ private struct LaunchSupportSettingsView: View {
                     }
                 }
                 .padding(.vertical, 4)
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             if !viewModel.usesMadeiraRuntime {
             Section("Setup Progress") {
@@ -232,7 +232,7 @@ private struct LaunchSupportSettingsView: View {
                     }
                     .padding(.vertical, 3)
                 }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             }
             #if MADEIRA_RUNTIME
@@ -273,7 +273,7 @@ private struct LaunchSupportSettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             if !viewModel.usesMadeiraRuntime {
             Section("JitStreamer") {
@@ -291,7 +291,7 @@ private struct LaunchSupportSettingsView: View {
                 Text("Only configure this when JitStreamer is your chosen external JIT provider.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
             }
         }
         .navigationTitle("Launch Support")
@@ -351,7 +351,7 @@ private struct RuntimeSettingsView: View {
                     ) ?? "Never"
                 )
                 }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             if !viewModel.runtimeSubsystemStatuses.isEmpty {
                 Section("Subsystems") {
@@ -370,7 +370,7 @@ private struct RuntimeSettingsView: View {
                         }
                         .padding(.vertical, 3)
                     }
-                }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+                }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
             }
 
             if !viewModel.usesMadeiraRuntime {
@@ -378,7 +378,7 @@ private struct RuntimeSettingsView: View {
                 MenuValue("Capability", value: viewModel.hostCapabilities.deviceCapabilityClass.displayName)
                 MenuValue("Thermal State", value: viewModel.hostCapabilities.thermalState.displayName)
                 MenuValue("Low Power Mode", value: viewModel.hostCapabilities.lowPowerModeEnabled ? "On" : "Off")
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             }
             if !viewModel.runtimeConstraintNotes.isEmpty {
@@ -388,7 +388,7 @@ private struct RuntimeSettingsView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
-                }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+                }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
             }
         }
         .navigationTitle("Runtime")
@@ -477,7 +477,7 @@ private struct DiagnosticsSettingsView: View {
                     Label("No runtime log is available yet", systemImage: "doc")
                         .foregroundStyle(.secondary)
                 }
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             Section("Current State") {
                 MenuValue("JIT", value: viewModel.jitStatus.displayName)
@@ -485,13 +485,13 @@ private struct DiagnosticsSettingsView: View {
                 MenuValue("Games", value: "\(viewModel.games.count)")
                 MenuValue("Queued Launches", value: "\(viewModel.pendingLaunches.count)")
                 MenuValue("Compatibility Audits", value: "\(viewModel.verificationAudits.count)")
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
 
             Section("Technical Details") {
                 MenuValue("Bundle", value: Bundle.main.bundleIdentifier ?? "Unknown")
                 MenuValue("Environment", value: viewModel.usesMadeiraRuntime ? "Native iOS" : viewModel.hostCapabilities.executionEnvironment.displayName)
                 MenuValue("Runtime Bundle", value: viewModel.activeRuntimeHealth.runtimeBundleIdentifier ?? viewModel.hostCapabilities.selectedRuntimeBundle?.id ?? "Missing")
-            }.listRowBackground(RoundedRectangle(cornerRadius: 22).fill(SparkTheme.surface).padding(.vertical, 2)).listRowSeparator(.hidden)
+            }.listRowBackground(SparkCardBackground().padding(.vertical, 2)).listRowSeparator(.hidden)
         }
         .navigationTitle("Diagnostics")
         .navigationBarTitleDisplayMode(.inline)

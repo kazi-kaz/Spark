@@ -462,7 +462,8 @@ private struct SteamPanel: ViewModifier {
 private struct SteamCard: ViewModifier {
     func body(content: Content) -> some View {
         content.padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(red: 0.078, green: 0.086, blue: 0.106), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .background(Color(red: 0.078, green: 0.086, blue: 0.106), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
             .padding(.vertical, 4)
             .listRowBackground(Color.clear)
     }

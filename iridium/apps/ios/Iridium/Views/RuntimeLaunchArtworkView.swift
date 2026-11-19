@@ -187,7 +187,7 @@ import SwiftUI
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(SparkTheme.surface.opacity(0.85), in: RoundedRectangle(cornerRadius: 26))
         .overlay {
-            RoundedRectangle(cornerRadius: 26).strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 26).strokeBorder(SparkTheme.hairline, lineWidth: 1)
                 .allowsHitTesting(false)
         }
     }

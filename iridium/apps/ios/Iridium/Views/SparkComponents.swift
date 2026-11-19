@@ -23,6 +23,15 @@ struct SparkCard<Content: View>: View {
     }
 }
 
+/// Card fill and rim for rows drawn inside a `List`, matching `SparkCard`.
+struct SparkCardBackground: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: SparkTheme.cardRadius, style: .continuous).fill(SparkTheme.surface)
+            .overlay(RoundedRectangle(cornerRadius: SparkTheme.cardRadius, style: .continuous)
+                .strokeBorder(SparkTheme.hairline, lineWidth: 1))
+    }
+}
+
 /// One row inside a card: icon tile, title, optional value and chevron.
 struct SparkRow: View {
     let title: String

@@ -27,6 +27,7 @@ struct SparkConfigEditorView: View {
                 .scrollContentBackground(.hidden)
                 .padding(8)
                 .background(SparkTheme.surface, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(SparkTheme.hairline, lineWidth: 1))
                 .accessibilityLabel("\(title) contents")
             Text("One setting per line, for example env.NAME=value. Lines starting with # are comments. Changes apply to the next launch.")
                 .font(.footnote).foregroundStyle(.secondary)
