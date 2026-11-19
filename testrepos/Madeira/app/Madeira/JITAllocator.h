@@ -101,5 +101,16 @@ extern unsigned long madeira_early_pool_base;     /* placeholder directly above 
 extern unsigned long madeira_early_intruder_base, madeira_early_intruder_size;   /* ml1135: first mapping above the window when no placeholder fit */
 extern unsigned madeira_early_intruder_tag, madeira_early_intruder_prot;
 extern unsigned long madeira_early_pool_size;
+extern unsigned long madeira_early_pool_released;   /* ml1150: bytes of the placeholder currently handed back for a pool request */
+#ifdef __cplusplus
+extern "C" {
+#endif
+unsigned long madeira_early_pool_release(unsigned long want);
+void madeira_early_pool_settle(unsigned long rx, unsigned long len);
+unsigned long madeira_largest_free_hole(unsigned long lo, unsigned long hi, unsigned long *size_out);
+void madeira_early_claims_describe(char *buf, unsigned long n);
+#ifdef __cplusplus
+}
+#endif
 
 #endif // JIT_ALLOCATOR_H

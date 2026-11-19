@@ -407,6 +407,27 @@ writes those globals after the grace period; until it is found, each exited
 child costs about 2 MB of pool. `MADEIRA_POOL_REUSE_NTDLL=1` restores reuse.
 Host check: `build/host-tests/check-ntdll-quarantine.py`.
 
+## JIT pool: the placeholder above the exe window is handed back (MX Bikes, Madeira Dock, 2026-11-03)
+
+`JITAllocator.c` holds up to 1 GB directly above the fixed-base executable
+window from before `main`, and its comment says `StikJITHelper` frees it before
+asking the debugger for the RX pool. Nothing did. The debugger places the pool
+first-fit with no hint, so a 512 MB or 1024 MB request could not use that hole,
+fell through to 0x7000000000 (the guest 64G window), was rejected three times
+and the pool ended up 256 MB. A Madeira Dock session (services.exe, five
+winedevice, plugplay, svchost, dockhost) fills 256 MB (`bump=0xef94000/0x10000000`),
+every later load is mapped without exec and the app is terminated by the
+redelivery guard. Whether 512 MB fit depended on where the first pin chunk
+landed (0x1198cc000 fit, 0x12a000000 and 0x128000000 did not).
+
+`allocatePool` now frees exactly the bytes the pool needs (and only after the pin
+chunks), logs `[pool-placeholder] ml1150 window=... placeholder=... released=...;
+largest hole below the guest window ...`, skips a size when no hole can hold it,
+and puts the hold back if the pool lands elsewhere or fails (what is left above
+a pool that took the released bytes stays held). Host check:
+`build/host-tests/check-pool-placeholder.py` compiles the production functions
+against a fake address space.
+
 ## Truncated 32-bit stack pointers
 
 `signal_arm64_ios.c` recovers a stack pointer that a game keeps in a 32-bit

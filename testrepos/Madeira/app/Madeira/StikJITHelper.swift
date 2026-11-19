@@ -231,6 +231,29 @@ enum StikJITHelper {
         let guestLo = 0x7000000000
         let guestHi = 0x8000000000
         var rxPtrOpt: UnsafeMutableRawPointer? = nil
+
+        // ml1150: hand the placeholder JITAllocator.c holds above the exe window
+        // back to the kernel, but only the bytes this pool needs and only now,
+        // after the pin chunks. The debugger places first-fit, and without this
+        // the only hole big enough for a 512MB pool is the one we are sitting on,
+        // so the request fell through to 0x7000000000, was rejected three times
+        // and the pool ended up 256MB (too small for a Madeira Dock session).
+        _ = madeira_early_pool_release(UInt(poolSize))
+        var holeSize: UInt = 0
+        let holeBase = madeira_largest_free_hole(UInt(goodLow), UInt(guestLo), &holeSize)
+        var claims = [CChar](repeating: 0, count: 256)
+        madeira_early_claims_describe(&claims, UInt(claims.count))
+        LogStore.shared.log(String(format: "[pool-placeholder] ml1150 %@; largest hole below the guest window 0x%lx+0x%lx for a 0x%lx pool",
+                                   String(cString: claims), holeBase, holeSize, UInt(poolSize)))
+        if holeSize < UInt(poolSize) {
+            // Nothing the kernel can hand out first-fit is big enough, so the
+            // request could only land in the guest window. Skip this size now
+            // instead of spending three identical debugger round trips on it.
+            LogStore.shared.log("[pool-placeholder] no free hole fits \(poolSize / 1024 / 1024)MB — skipping this size",
+                                level: .error)
+            madeira_early_pool_settle(0, 0)
+            return nil
+        }
         for attempt in 0..<3 {
             guard let p = jit26_prepare_region(nil, poolSize), p != UnsafeMutableRawPointer(bitPattern: 0) else {
                 LogStore.shared.log("Debugger failed to allocate RX memory (attempt \(attempt))", level: .error)
@@ -251,10 +274,12 @@ enum StikJITHelper {
                 : "  bad region kept as pin (vm_deallocate kr=\(dkr))")
         }
         guard let rxPtr = rxPtrOpt else {
+            madeira_early_pool_settle(0, 0)
             LogStore.shared.log("JIT pool placement failed.", level: .error)
             return nil
         }
         let rxAddr = Int(bitPattern: rxPtr)
+        madeira_early_pool_settle(UInt(rxAddr), UInt(poolSize))
         LogStore.shared.log("RX pool at \(String(format: "%p", rxAddr))")
 
         // Create RW mapping via vm_remap

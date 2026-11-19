@@ -899,3 +899,98 @@ __attribute__((constructor(101), used)) static void madeira_early_va_claim(void)
         }
     }
 }
+
+
+/* BEGIN madeira-pool-placeholder
+ *
+ * ml1150: HAND THE POOL PLACEHOLDER BACK BEFORE THE DEBUGGER PLACES THE POOL.
+ *
+ * madeira_early_va_claim() above holds up to 1GB directly above the exe window so
+ * the app's own allocations cannot take it. The comment there says StikJITHelper
+ * releases it right before asking the debugger for the RX pool; nothing did.
+ * The debugger places the pool first-fit with no address hint, so a pool bigger
+ * than the hole BELOW the window cannot use the one hole that is big enough.
+ * It falls through to 0x7000000000 (the guest 64G window), is rejected three
+ * times, and the allocator ends on 256MB. MX Bikes through Madeira Dock fills
+ * 256MB (services.exe, five winedevice, plugplay, svchost, dockhost: 0xef94000
+ * of 0x10000000 used), every later load is mapped without exec and the app dies.
+ *   20:30  pin chunk 0x1198cc000 -> 336MB..630MB below the window -> 512MB fits
+ *   15:08  pin chunk 0x12a000000 -> 352MB below the window         -> 512MB cannot
+ * Releasing exactly the bytes the pool needs, just before the request, lets the
+ * first-fit land on 0x148000000. Anything that does not work out puts the hold
+ * back (madeira_early_pool_settle with rx == 0). */
+unsigned long madeira_early_pool_released;
+
+static void madeira_hold_range(unsigned long a, unsigned long n)
+{
+    vm_address_t at = (vm_address_t)a;
+    if (!n) return;
+    if (vm_allocate(mach_task_self(), &at, (vm_size_t)n, VM_FLAGS_FIXED) == KERN_SUCCESS && at == a)
+        vm_protect(mach_task_self(), at, (vm_size_t)n, 0, VM_PROT_NONE);
+}
+
+/* Free the first `want` bytes of the placeholder. Returns the bytes freed, 0 if
+ * there is no placeholder, it is smaller than `want`, or a release is pending. */
+unsigned long madeira_early_pool_release(unsigned long want)
+{
+    if (madeira_early_pool_released || !madeira_early_pool_base || !madeira_early_pool_size) return 0;
+    want = (want + 0x3fffUL) & ~0x3fffUL;
+    if (!want || want > madeira_early_pool_size) return 0;
+    if (vm_deallocate(mach_task_self(), (vm_address_t)madeira_early_pool_base, (vm_size_t)want) != KERN_SUCCESS)
+        return 0;
+    madeira_early_pool_released = want;
+    return want;
+}
+
+/* Call once the request is over. rx/len = where the pool landed, or 0/0 when it
+ * failed. A pool inside the released bytes keeps them (anything the pool did not
+ * cover is held again) and the placeholder shrinks to what is left above it; a
+ * pool anywhere else, or none, puts the whole hold back. */
+void madeira_early_pool_settle(unsigned long rx, unsigned long len)
+{
+    unsigned long base = madeira_early_pool_base, rel = madeira_early_pool_released;
+    if (!rel) return;
+    madeira_early_pool_released = 0;
+    if (rx && len && rx >= base && rx + len <= base + rel) {
+        madeira_hold_range(base, rx - base);
+        madeira_hold_range(rx + len, base + rel - (rx + len));
+        madeira_early_pool_base = base + rel;
+        madeira_early_pool_size -= rel;
+    } else {
+        madeira_hold_range(base, rel);
+    }
+}
+
+/* Largest unmapped run in [lo, hi). Returns its base (0 if none) and its size.
+ * What the kernel can hand out first-fit is exactly these runs. */
+unsigned long madeira_largest_free_hole(unsigned long lo, unsigned long hi, unsigned long *size_out)
+{
+    unsigned long cursor = lo, best = 0, best_base = 0;
+    int guard;
+    for (guard = 0; guard < 8192 && cursor < hi; guard++) {
+        vm_address_t at = (vm_address_t)cursor;
+        vm_size_t sz = 0;
+        natural_t depth = 0;
+        vm_region_submap_info_data_64_t info;
+        mach_msg_type_number_t cnt = VM_REGION_SUBMAP_INFO_COUNT_64;
+        kern_return_t kr = vm_region_recurse_64(mach_task_self(), &at, &sz, &depth,
+                                                (vm_region_recurse_info_t)&info, &cnt);
+        unsigned long gap_end = (kr == KERN_SUCCESS && (unsigned long)at < hi) ? (unsigned long)at : hi;
+        if (gap_end > cursor && gap_end - cursor > best) { best = gap_end - cursor; best_base = cursor; }
+        if (kr != KERN_SUCCESS || (unsigned long)at >= hi) break;
+        cursor = (unsigned long)at + (unsigned long)sz;
+    }
+    if (size_out) *size_out = best;
+    return best ? best_base : 0;
+}
+/* One line describing what the constructor claimed and what is handed back now
+ * (the log needs it; Swift does not read these globals itself). */
+void madeira_early_claims_describe(char *buf, unsigned long n)
+{
+    if (!buf || !n) return;
+    snprintf(buf, n, "window=0x%lx+0x%lx placeholder=0x%lx+0x%lx released=0x%lx intruder=0x%lx+0x%lx",
+             madeira_early_window_base, madeira_early_window_size,
+             madeira_early_pool_base, madeira_early_pool_size, madeira_early_pool_released,
+             madeira_early_intruder_base, madeira_early_intruder_size);
+}
+/* END madeira-pool-placeholder */
