@@ -156,6 +156,13 @@ NTSTATUS WINAPI NtOpenKeyEx( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRI
     }
     SERVER_END_REQ;
     TRACE("<- %p\n", *key);
+#ifdef WINE_IOS
+    /* ml1160: Steam/Valve key opens only (see ios_objprobe in sync.c). */
+    {
+        extern void ios_objprobe( const char *tag, const char *op, const OBJECT_ATTRIBUTES *attr, unsigned int status );
+        ios_objprobe( "reg-probe", "NtOpenKeyEx", attr, ret );
+    }
+#endif
     return ret;
 }
 

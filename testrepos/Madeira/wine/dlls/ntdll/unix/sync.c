@@ -1929,6 +1929,63 @@ static unsigned int madeira_fast_watched_wait( const union select_op *op, data_s
 #endif /* WINE_IOS */
 
 
+#ifdef WINE_IOS
+/* ml1160: [obj-probe] -- what a guest process tried to open or create by NAME.
+ *
+ * Half-Life (32-bit) loads steamclient.dll and then fails SteamAPI_Init with
+ * "create pipe failed" while the Madeira Dock's engine, in dockhost.exe, waits on
+ * STEAM_DIPC_CONSUME at count 0 for the whole launch: the game's client never
+ * reaches it. Nothing recorded which named objects, sections or registry keys that
+ * client opened, or what the answer was. This logs them, always on and without a
+ * WINEDEBUG channel (full trace slows the Dock so much that the game never starts).
+ *
+ * Success and failure are both logged because the question is whether the 32-bit
+ * client finds the objects the 64-bit engine created. Bounded, so a busy game
+ * cannot flood the log: names containing "steam" or "valve" have their own budget
+ * (400); other object names get 150; other registry keys are not logged. pid and
+ * tid tell the Dock's own calls from the game's; wow=1 marks a 32-bit process. */
+static int ios_objprobe_logged, ios_objprobe_steam_logged;
+
+static int ios_probe_has( const char *hay, const char *needle )
+{
+    size_t n = strlen( needle );
+    for (; *hay; hay++)
+    {
+        size_t i = 0;
+        while (i < n && hay[i] && (hay[i] | 0x20) == needle[i]) i++;
+        if (i == n) return 1;
+    }
+    return 0;
+}
+
+void ios_objprobe( const char *tag, const char *op, const OBJECT_ATTRIBUTES *attr, unsigned int status );
+void ios_objprobe( const char *tag, const char *op, const OBJECT_ATTRIBUTES *attr, unsigned int status )
+{
+    char nb[240];
+    unsigned int k = 0, wl;
+    const WCHAR *w;
+    int special;
+
+    if (!attr || !attr->ObjectName || !attr->ObjectName->Buffer) return;
+    w = attr->ObjectName->Buffer;
+    wl = attr->ObjectName->Length / sizeof(WCHAR);
+    while (k < wl && k < sizeof(nb) - 1) { nb[k] = (w[k] < 32 || w[k] > 126) ? '?' : (char)w[k]; k++; }
+    nb[k] = 0;
+    special = ios_probe_has( nb, "steam" ) || ios_probe_has( nb, "valve" );
+    if (tag[0] == 'r' && !special) return;   /* reg-probe: Steam/Valve keys only */
+    if (special) { if (ios_objprobe_steam_logged >= 400) return; ios_objprobe_steam_logged++; }
+    else { if (ios_objprobe_logged >= 150) return; ios_objprobe_logged++; }
+    dprintf( 2, "[%s] ml1160 pid=%04x tid=%04x wow=%d %s status=0x%08x root=%p attr=0x%x name=%s\n", tag,
+             (unsigned int)HandleToULong( NtCurrentTeb()->ClientId.UniqueProcess ),
+             (unsigned int)HandleToULong( NtCurrentTeb()->ClientId.UniqueThread ),
+             (int)is_wow64(), op, status, attr->RootDirectory, (unsigned int)attr->Attributes, nb );
+}
+#define IOS_OBJPROBE(op, attr, status) ios_objprobe( "obj-probe", op, attr, status )
+#else
+#define IOS_OBJPROBE(op, attr, status) ((void)0)
+#endif
+
+
 /******************************************************************************
  *              NtCreateSemaphore (NTDLL.@)
  */
@@ -1958,6 +2015,7 @@ NTSTATUS WINAPI NtCreateSemaphore( HANDLE *handle, ACCESS_MASK access, const OBJ
     SERVER_END_REQ;
 
     free( objattr );
+    IOS_OBJPROBE( "NtCreateSemaphore", attr, ret );
     return ret;
 }
 
@@ -1985,6 +2043,7 @@ NTSTATUS WINAPI NtOpenSemaphore( HANDLE *handle, ACCESS_MASK access, const OBJEC
         *handle = wine_server_ptr_handle( reply->handle );
     }
     SERVER_END_REQ;
+    IOS_OBJPROBE( "NtOpenSemaphore", attr, ret );
     return ret;
 }
 
@@ -2127,6 +2186,7 @@ NTSTATUS WINAPI NtCreateEvent( HANDLE *handle, ACCESS_MASK access, const OBJECT_
     SERVER_END_REQ;
 
     free( objattr );
+    IOS_OBJPROBE( "NtCreateEvent", attr, ret );
     return ret;
 }
 
@@ -2154,6 +2214,7 @@ NTSTATUS WINAPI NtOpenEvent( HANDLE *handle, ACCESS_MASK access, const OBJECT_AT
         *handle = wine_server_ptr_handle( reply->handle );
     }
     SERVER_END_REQ;
+    IOS_OBJPROBE( "NtOpenEvent", attr, ret );
     return ret;
 }
 
@@ -2402,6 +2463,7 @@ NTSTATUS WINAPI NtCreateMutant( HANDLE *handle, ACCESS_MASK access, const OBJECT
     SERVER_END_REQ;
 
     free( objattr );
+    IOS_OBJPROBE( "NtCreateMutant", attr, ret );
     return ret;
 }
 
@@ -2429,6 +2491,7 @@ NTSTATUS WINAPI NtOpenMutant( HANDLE *handle, ACCESS_MASK access, const OBJECT_A
         *handle = wine_server_ptr_handle( reply->handle );
     }
     SERVER_END_REQ;
+    IOS_OBJPROBE( "NtOpenMutant", attr, ret );
     return ret;
 }
 
@@ -4242,6 +4305,7 @@ NTSTATUS WINAPI NtCreateSection( HANDLE *handle, ACCESS_MASK access, const OBJEC
     SERVER_END_REQ;
 
     free( objattr );
+    IOS_OBJPROBE( "NtCreateSection", attr, ret );
     return ret;
 }
 
@@ -4279,6 +4343,7 @@ NTSTATUS WINAPI NtOpenSection( HANDLE *handle, ACCESS_MASK access, const OBJECT_
         *handle = wine_server_ptr_handle( reply->handle );
     }
     SERVER_END_REQ;
+    IOS_OBJPROBE( "NtOpenSection", attr, ret );
     return ret;
 }
 

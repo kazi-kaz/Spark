@@ -436,6 +436,17 @@ ladder now has steps between the powers of two (1024, 768, 512, 448, 384, 320,
 256, 128, still capped by the setting), so that hole gives 448 MB. A size that
 does not fit is skipped without a debugger round trip.
 
+`[obj-probe]` and `[reg-probe]` (ml1160, `sync.c`, `registry.c`) log what a guest
+process opens or creates by name: events, semaphores, mutexes and sections
+(`obj-probe`, success and failure) and Steam/Valve registry keys (`reg-probe`),
+each with pid, tid, `wow=` (1 for a 32-bit process), status and name. They are
+always on, need no WINEDEBUG channel and are bounded (400 lines for names
+containing "steam" or "valve", 150 for other object names). Half-Life (32-bit)
+loads `steamclient.dll` and fails `SteamAPI_Init` with "create pipe failed" while
+dockhost's engine waits on `STEAM_DIPC_CONSUME` at count 0 for the whole launch;
+full trace slows the Dock so much that the game never starts, so this is how to see
+what the 32-bit client opens.
+
 ## Truncated 32-bit stack pointers
 
 `signal_arm64_ios.c` recovers a stack pointer that a game keeps in a 32-bit
