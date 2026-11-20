@@ -213,4 +213,13 @@ for declaration in ("unsigned long madeira_early_pool_release(unsigned long);",
     assert declaration in native, "MadeiraNative.h must declare: " + declaration
 used = set(re.findall(r"\b(madeira_(?:early_pool_release|early_pool_settle|largest_free_hole|early_claims_describe))\(", pool))
 assert len(used) == 4, used
+# ml1151: a hole a few MB short of 512MB must still yield a pool bigger than 256MB. The ladder
+# has to be descending and carry steps between the powers of two (a 506MB hole once fell to 256MB).
+ladder = re.search(r"for mb in \[([0-9, ]+)\] where mb <= cap", swift)
+assert ladder, "adaptive pool ladder not found"
+sizes = [int(x) for x in ladder.group(1).split(",")]
+assert sizes == sorted(sizes, reverse=True) and sizes[0] == 1024 and sizes[-1] == 128, sizes
+assert all(s % 64 == 0 for s in sizes), "sizes must stay multiples of 64MB"
+best = next(s for s in sizes if s * 1024 * 1024 <= 0x1f9d8000)
+assert best == 448, "the 0x1f9d8000-byte hole from the 2026-11-20 log must give a 448MB pool, got %d" % best
 print("PASS pool-placeholder")

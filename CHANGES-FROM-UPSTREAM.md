@@ -428,6 +428,14 @@ a pool that took the released bytes stays held). Host check:
 `build/host-tests/check-pool-placeholder.py` compiles the production functions
 against a fake address space.
 
+The 2026-11-20 Half-Life run showed the other half of that: the 16 MB pin chunk
+landed at 0x118f30000, the largest hole below the exe window was 0x1f9d8000
+(506 MB, 6 MB short of 512 MB) and the ladder (1024, 512, 256, 128) fell to
+256 MB, which `[jit-pool] EXHAUSTED` 95,893 times in the services stage. The
+ladder now has steps between the powers of two (1024, 768, 512, 448, 384, 320,
+256, 128, still capped by the setting), so that hole gives 448 MB. A size that
+does not fit is skipped without a debugger round trip.
+
 ## Truncated 32-bit stack pointers
 
 `signal_arm64_ios.c` recovers a stack pointer that a game keeps in a 32-bit

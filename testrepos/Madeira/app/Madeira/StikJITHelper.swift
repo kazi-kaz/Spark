@@ -144,7 +144,12 @@ enum StikJITHelper {
         // 1024: opt-in for large games (Iridium setting or iridium.cfg jit-pool-mb).
         // Pseudoregalia exhausted 512 MB (2026-10-12); Madeira ran 896-1152 MB pools.
         let cap = [128, 256, 512, 1024].contains(requested) ? requested : 512
-        for mb in [1024, 512, 256, 128] where mb <= cap && mb <= availableMB / 2 {
+        // ml1151: the steps between the powers of two matter. Where the 16MB pin chunk
+        // lands moves the largest free hole by hundreds of MB from launch to launch
+        // (a 506MB hole once missed 512MB by 6MB and the pool fell to 256MB, too small
+        // for a Madeira Dock session). Sizes that do not fit are skipped without a
+        // debugger round trip, so the extra steps cost one log line each.
+        for mb in [1024, 768, 512, 448, 384, 320, 256, 128] where mb <= cap && mb <= availableMB / 2 {
             if let pool = allocatePool(poolSize: mb * 1024 * 1024) { return pool }
         }
         return nil
