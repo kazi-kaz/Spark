@@ -135,6 +135,18 @@ try
     await VerifiedFiles.Download(install, stage, file, Fetch, _ => { }, default);
     Check(calls == 2, "verified files are reused");
 
+    // Steam lists an empty file as 0 bytes, 0 chunks and an all-zero hash.
+    var empty = new DepotManifest.FileData { FileName = "empty/placeholder.txt", TotalSize = 0, FileHash = new byte[20] };
+    await VerifiedFiles.Download(install, stage, empty, Fetch, _ => { }, default);
+    Check(File.Exists(Path.Combine(install, "empty", "placeholder.txt"))
+        && new FileInfo(Path.Combine(install, "empty", "placeholder.txt")).Length == 0, "empty manifest file is promoted");
+    Check(await VerifiedFiles.Matches(Path.Combine(install, "empty", "placeholder.txt"), empty, default), "empty manifest file matches");
+    await VerifiedFiles.Download(install, stage, empty, Fetch, _ => { }, default);
+    File.WriteAllBytes(Path.Combine(install, "empty", "placeholder.txt"), [1]);
+    Check(!await VerifiedFiles.Matches(Path.Combine(install, "empty", "placeholder.txt"), empty, default), "non-empty file does not match empty manifest");
+    File.Delete(Path.Combine(install, "empty", "placeholder.txt"));
+    calls = 2;
+
     // Interrupt one chunk. The other verified chunk must survive and be reused.
     file.FileName = "resume.exe";
     await RejectAsync(() => VerifiedFiles.Download(install, stage, file, async (chunk, buffer, ct) =>

@@ -60,6 +60,9 @@ public static class VerifiedFiles
     {
         RejectLink(path);
         if (!File.Exists(path) || new FileInfo(path).Length != (long)file.TotalSize) return false;
+        // Steam records an empty file with no chunks and an all-zero hash, not the SHA-1
+        // of empty input, so the length match is the whole check for it.
+        if (file.TotalSize == 0 && file.Chunks.Count == 0) return true;
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 131072, true);
         return CryptographicOperations.FixedTimeEquals(await SHA1.HashDataAsync(stream, ct), file.FileHash);
     }
