@@ -891,21 +891,8 @@ static void *wine_process_thread(void *arg) {
                 setenv("WINEDEBUG", "err+all,err-virtual,trace+mfreadwrite,trace+mfplat,warn+quartz", 1);
                 LOG("WINEDEBUG = targeted Iridium media trace");
             } else if (verbose && *verbose && *verbose != '0') {
-                /* ml1151: Debug Trace used to log every Nt call and file open. On
-                 * 2026-11-20 that was 340 MB per launch (trace+syscall 37%, trace+module
-                 * 19%, err:virtual 19%, trace+file 16%) and slowed the Dock so far that
-                 * Half-Life never reached its window. The default trace keeps what finds
-                 * crashes: process spawns, DLL loads and load order, load failures.
-                 * Failed file and pipe opens are logged without WINEDEBUG ([file-fail]).
-                 * MADEIRA_DEBUG_FULL=1 restores the full channel set. */
-                const char *full = getenv("MADEIRA_DEBUG_FULL");
-                if (full && *full && *full != '0') {
-                    setenv("WINEDEBUG", "err+all,err-virtual,fixme+all,warn+module,warn+file,trace+process,trace+module,trace+loaddll,trace+loadorder,trace+win,trace+user32,trace+syscall,trace+file", 1);
-                    LOG("WINEDEBUG = full trace (MADEIRA_DEBUG_FULL set)");
-                } else {
-                    setenv("WINEDEBUG", "err+all,err-virtual,fixme-all,warn+module,trace+process,trace+loaddll,trace+loadorder", 1);
-                    LOG("WINEDEBUG = debug trace (process, loaddll, loadorder, load failures; MADEIRA_DEBUG_FULL=1 for everything)");
-                }
+                setenv("WINEDEBUG", "err+all,fixme+all,warn+module,warn+file,trace+process,trace+module,trace+loaddll,trace+loadorder,trace+win,trace+user32,trace+syscall,trace+file", 1);
+                LOG("WINEDEBUG = verbose (MADEIRA_DEBUG_VERBOSE set)");
             } else {
                 /* err+all keeps real failure messages, but subtract err+virtual
                  * because our iOS virtual_ios.c uses ERR() for informational

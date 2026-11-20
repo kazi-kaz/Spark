@@ -12354,14 +12354,9 @@ static inline int mprotect_exec( void *base, size_t size, int unix_prot )
                 {
                     ERR("iOS JIT: pool exhausted for anon RWX %p+0x%lx\n",
                         base, (unsigned long)size);
-                    {
-                        static unsigned long exhausted_anon_logged;
-                        unsigned long exhausted_n = ++exhausted_anon_logged;
-                        if (exhausted_n <= 20 || exhausted_n % 1000 == 0)
-                            dprintf(2, "[jit-pool] EXHAUSTED (anon RWX): want=0x%lx bump=0x%lx/0x%lx tail_resv=0x%lx freelist=%d — FAILING allocation\n",
-                                    (unsigned long)alloc_size, (unsigned long)jit_pool_offset, (unsigned long)jit_pool_size,
-                                    (unsigned long)ios_jit_tail_reserved, ios_pool_free_count);
-                    }
+                    dprintf(2, "[jit-pool] EXHAUSTED (anon RWX): want=0x%lx bump=0x%lx/0x%lx tail_resv=0x%lx freelist=%d — FAILING allocation\n",
+                            (unsigned long)alloc_size, (unsigned long)jit_pool_offset, (unsigned long)jit_pool_size,
+                            (unsigned long)ios_jit_tail_reserved, ios_pool_free_count);
                     mprotect( base, size, PROT_READ );
                     errno = ENOMEM;
                     return -1;
@@ -12567,17 +12562,10 @@ static inline int mprotect_exec( void *base, size_t size, int unix_prot )
                  * call into the module BUS-fault-looped, locking the whole
                  * session. -1/ENOMEM propagates up as a failed module load /
                  * failed process start, which the shell reports and survives. */
-                {
-                    /* ml1151: a full pool fails every later load (95,893 identical lines in
-                     * one Debug Trace log). Say it for the first 20, then every 1000th. */
-                    static unsigned long exhausted_image_logged;
-                    unsigned long exhausted_n = ++exhausted_image_logged;
-                    if (exhausted_n <= 20 || exhausted_n % 1000 == 0)
-                        dprintf(2, "[jit-pool] EXHAUSTED (image %p+0x%lx): want=0x%lx bump=0x%lx/0x%lx tail_resv=0x%lx freelist=%d — FAILING the load (was: silent BUS loop)\n",
-                                image_base, (unsigned long)image_size, (unsigned long)alloc_size,
-                                (unsigned long)jit_pool_offset, (unsigned long)jit_pool_size,
-                                (unsigned long)ios_jit_tail_reserved, ios_pool_free_count);
-                }
+                dprintf(2, "[jit-pool] EXHAUSTED (image %p+0x%lx): want=0x%lx bump=0x%lx/0x%lx tail_resv=0x%lx freelist=%d — FAILING the load (was: silent BUS loop)\n",
+                        image_base, (unsigned long)image_size, (unsigned long)alloc_size,
+                        (unsigned long)jit_pool_offset, (unsigned long)jit_pool_size,
+                        (unsigned long)ios_jit_tail_reserved, ios_pool_free_count);
                 mprotect( base, size, PROT_READ );
                 ios_jit_image_exhausted = 1;
                 errno = ENOMEM;

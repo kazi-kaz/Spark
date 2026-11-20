@@ -577,7 +577,7 @@ private struct RuntimeLaunchPreferences: View {
                         }
                     }
                 }
-                Text("Logs process starts, DLL loads and load failures for the next launch. For diagnosing crashes only: it makes games slower and the log larger.")
+                Text("Logs file opens, system calls and module loads for the next launch. For diagnosing crashes only: it makes games much slower and logs very large.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("Relaxed CPU Ordering (Experimental)") {

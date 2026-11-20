@@ -436,16 +436,6 @@ ladder now has steps between the powers of two (1024, 768, 512, 448, 384, 320,
 256, 128, still capped by the setting), so that hole gives 448 MB. A size that
 does not fit is skipped without a debugger round trip.
 
-Debug Trace is lighter for the same reason. The 2026-11-20 logs were 340 MB per
-launch (`trace+syscall` 37%, `trace+module` 19%, `err:virtual` 19%,
-`trace+file` 16%, `[jit-pool] EXHAUSTED` repeated 95,893 times) and with it on the
-Dock never started Half-Life within 3 minutes. Debug Trace now sets
-`err+all,err-virtual,fixme-all,warn+module,trace+process,trace+loaddll,trace+loadorder`;
-`MADEIRA_DEBUG_FULL=1` restores the old channels (plus `err-virtual`). The
-`[jit-pool] EXHAUSTED` line is printed for the first 20 failures and then every
-1000th. Failed file and pipe opens still appear without any trace channel as
-`[file-fail]` / `[file-wfail]`.
-
 ## Truncated 32-bit stack pointers
 
 `signal_arm64_ios.c` recovers a stack pointer that a game keeps in a 32-bit
