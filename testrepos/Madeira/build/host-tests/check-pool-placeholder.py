@@ -203,4 +203,14 @@ assert "[pool-placeholder] ml1150" in pool
 assert pool.count("madeira_early_pool_settle(0, 0)") == 2, "no-hole skip and failed placement both restore the hold"
 assert "madeira_early_pool_settle(UInt(rxAddr), UInt(poolSize))" in pool
 assert pool.index("madeira_early_pool_settle(UInt(rxAddr), UInt(poolSize))") > pool.index("RX pool at") - 200
+# Iridium's Swift target sees C only through MadeiraNative.h (build 10.1 run 44627349994 failed with
+# "cannot find 'madeira_early_pool_release' in scope" when these were only in JITAllocator.h).
+native = (ROOT.parents[1] / "iridium/apps/ios/MadeiraSupport/MadeiraNative.h").read_text(encoding="utf-8")
+for declaration in ("unsigned long madeira_early_pool_release(unsigned long);",
+                    "void madeira_early_pool_settle(unsigned long, unsigned long);",
+                    "unsigned long madeira_largest_free_hole(unsigned long, unsigned long, unsigned long *);",
+                    "void madeira_early_claims_describe(char *, unsigned long);"):
+    assert declaration in native, "MadeiraNative.h must declare: " + declaration
+used = set(re.findall(r"\b(madeira_(?:early_pool_release|early_pool_settle|largest_free_hole|early_claims_describe))\(", pool))
+assert len(used) == 4, used
 print("PASS pool-placeholder")

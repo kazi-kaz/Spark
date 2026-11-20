@@ -7,6 +7,11 @@
 bool jit_check_debugged(void);
 void jit_install_trap_handler(void);
 void *jit26_prepare_region(void *, size_t);
+// JIT pool placeholder above the exe window (JITAllocator.c, ml1150)
+unsigned long madeira_early_pool_release(unsigned long);
+void madeira_early_pool_settle(unsigned long, unsigned long);
+unsigned long madeira_largest_free_hole(unsigned long, unsigned long, unsigned long *);
+void madeira_early_claims_describe(char *, unsigned long);
 void jit26_detach(void);
 bool jit_make_region_no_footprint(void *, size_t, const char *);
 void jit_set_log_callback(void (*)(const char *));
