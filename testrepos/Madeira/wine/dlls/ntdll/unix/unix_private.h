@@ -111,6 +111,18 @@ static inline BOOL is_wow64(void)
 }
 #endif
 
+#ifdef WINE_IOS
+/* ml1161: Steam IPC probes (sync.c, virtual_ios.c). */
+extern int ios_steam_ipc_armed;
+extern int ios_ipcprobe_on( int kind );
+extern void ios_ipcprobe( int kind, const char *fmt, ... ) __attribute__((format(printf, 2, 3)));
+extern void ios_probe_desc( HANDLE handle, char *buf, size_t len );
+extern int ios_probe_has( const char *hay, const char *needle );
+extern void ios_secprobe_note( HANDLE handle, const OBJECT_ATTRIBUTES *attr, unsigned int status );
+extern void ios_secprobe_map( HANDLE handle, void *base, SIZE_T size, unsigned int status );
+extern void ios_secprobe_unmap( void *base );
+#endif
+
 /* check for old-style Wow64 (using a 32-bit ntdll.so) */
 static inline BOOL is_old_wow64(void)
 {

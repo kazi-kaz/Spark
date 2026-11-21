@@ -2525,10 +2525,17 @@ void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
         ret = STATUS_INVALID_INFO_CLASS; \
         break
 
+#ifdef WINE_IOS
+/* ml1161: the public entry point is a probe wrapper below the real body. */
+#define IOS_PROBE_DEF(name) static NTSTATUS WINAPI ios_inner_##name
+#else
+#define IOS_PROBE_DEF(name) NTSTATUS WINAPI name
+#endif
+
 /**********************************************************************
  *           NtQueryInformationProcess  (NTDLL.@)
  */
-NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class, void *info,
+IOS_PROBE_DEF(NtQueryInformationProcess)( HANDLE handle, PROCESSINFOCLASS class, void *info,
                                            ULONG size, ULONG *ret_len )
 {
     unsigned int ret = STATUS_SUCCESS;
@@ -3066,6 +3073,22 @@ NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class
     return ret;
 }
 
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class, void *info,
+                                           ULONG size, ULONG *ret_len )
+{
+    NTSTATUS ret = ios_inner_NtQueryInformationProcess( handle, class, info, size, ret_len );
+    if (handle != NtCurrentProcess() && ios_ipcprobe_on( is_wow64() ? 1 : 0 ))
+    {
+        char d[160];
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( is_wow64() ? 1 : 0, "NtQueryInformationProcess h=%s class=%d size=%u status=0x%08x",
+                      d, (int)class, (unsigned int)size, (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
+
 #ifndef _WIN64
 
 /**********************************************************************
@@ -3345,7 +3368,7 @@ NTSTATUS WINAPI NtSetInformationProcess( HANDLE handle, PROCESSINFOCLASS class, 
 /**********************************************************************
  *           NtOpenProcess  (NTDLL.@)
  */
-NTSTATUS WINAPI NtOpenProcess( HANDLE *handle, ACCESS_MASK access,
+IOS_PROBE_DEF(NtOpenProcess)( HANDLE *handle, ACCESS_MASK access,
                                const OBJECT_ATTRIBUTES *attr, const CLIENT_ID *id )
 {
     unsigned int status;
@@ -3363,6 +3386,19 @@ NTSTATUS WINAPI NtOpenProcess( HANDLE *handle, ACCESS_MASK access,
     SERVER_END_REQ;
     return status;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtOpenProcess( HANDLE *handle, ACCESS_MASK access,
+                               const OBJECT_ATTRIBUTES *attr, const CLIENT_ID *id )
+{
+    NTSTATUS ret = ios_inner_NtOpenProcess( handle, access, attr, id );
+    if (ios_ipcprobe_on( is_wow64() ? 1 : 0 ))
+        ios_ipcprobe( is_wow64() ? 1 : 0, "NtOpenProcess target=%04x access=0x%x status=0x%08x handle=%p",
+                      id ? (unsigned int)HandleToULong( id->UniqueProcess ) : 0, (unsigned int)access,
+                      (unsigned int)ret, handle && !ret ? *handle : NULL );
+    return ret;
+}
+#endif
 
 
 /**********************************************************************

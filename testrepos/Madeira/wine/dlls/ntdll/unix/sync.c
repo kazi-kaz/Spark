@@ -1945,8 +1945,81 @@ static unsigned int madeira_fast_watched_wait( const union select_op *op, data_s
  * (400); other object names get 150; other registry keys are not logged. pid and
  * tid tell the Dock's own calls from the game's; wow=1 marks a 32-bit process. */
 static int ios_objprobe_logged, ios_objprobe_steam_logged;
+int ios_steam_ipc_armed;
+static ULONGLONG ios_steam_ipc_armed_at;
+static int ios_ipcprobe_count[3];
 
-static int ios_probe_has( const char *hay, const char *needle )
+/* ml1161: may a probe line be written now?
+ * kind 1: any call from a 32-bit (WoW) process, armed or not (budget 300).
+ * kind 0: once a 32-bit process has opened a Steam3Master object: its calls
+ *         (budget 700), and calls from 64-bit processes such as the Dock for
+ *         8 seconds after that (budget 400), to show whether the Dock reacts. */
+int ios_ipcprobe_on( int kind )
+{
+    if (kind == 1) return is_wow64() && ios_ipcprobe_count[1] < 300;
+    if (!ios_steam_ipc_armed) return 0;
+    if (is_wow64()) return ios_ipcprobe_count[0] < 700;
+    return ios_ipcprobe_count[2] < 400 &&
+           monotonic_counter() - ios_steam_ipc_armed_at < 8 * (ULONGLONG)TICKSPERSEC;
+}
+
+void ios_ipcprobe( int kind, const char *fmt, ... )
+{
+    char line[640];
+    va_list args;
+
+    if (!ios_ipcprobe_on( kind )) return;
+    __sync_fetch_and_add( &ios_ipcprobe_count[kind == 1 ? 1 : is_wow64() ? 0 : 2], 1 );
+    va_start( args, fmt );
+    vsnprintf( line, sizeof(line), fmt, args );
+    va_end( args );
+    dprintf( 2, "[ipc-probe] ml1161 pid=%04x tid=%04x wow=%d %s\n",
+             (unsigned int)HandleToULong( NtCurrentTeb()->ClientId.UniqueProcess ),
+             (unsigned int)HandleToULong( NtCurrentTeb()->ClientId.UniqueThread ),
+             (int)is_wow64(), line );
+}
+
+static void ios_probe_ascii( const UNICODE_STRING *us, char *out, size_t len, size_t tail )
+{
+    unsigned int n = us->Length / sizeof(WCHAR), start = 0, k = 0;
+    if (tail && n > tail) start = n - tail;
+    while (start + k < n && k < len - 1)
+    {
+        WCHAR c = us->Buffer[start + k];
+        out[k++] = (c < 32 || c > 126) ? '?' : (char)c;
+    }
+    out[k] = 0;
+}
+
+/* ml1161: "handle(Type:name)" for a probe line; names are cut to their last 60 characters. */
+void ios_probe_desc( HANDLE handle, char *buf, size_t len )
+{
+    union { OBJECT_TYPE_INFORMATION info; char raw[sizeof(OBJECT_TYPE_INFORMATION) + 256]; } type;
+    union { OBJECT_NAME_INFORMATION info; char raw[sizeof(OBJECT_NAME_INFORMATION) + 1024]; } name;
+    char tn[40] = "?", nn[64] = "";
+    ULONG ret_len;
+
+    if (!handle || (ULONG_PTR)handle >= (ULONG_PTR)-16)
+    {
+        snprintf( buf, len, "%p", handle );
+        return;
+    }
+    if (!NtQueryObject( handle, ObjectTypeInformation, &type, sizeof(type), &ret_len ) && type.info.TypeName.Buffer)
+        ios_probe_ascii( &type.info.TypeName, tn, sizeof(tn), 0 );
+    if (!NtQueryObject( handle, ObjectNameInformation, &name, sizeof(name), &ret_len ) && name.info.Name.Buffer)
+        ios_probe_ascii( &name.info.Name, nn, sizeof(nn), 60 );
+    snprintf( buf, len, "%p(%s:%s)", handle, tn, nn );
+}
+
+static const char *ios_probe_timeout( const LARGE_INTEGER *timeout, char *buf, size_t len )
+{
+    if (!timeout) return "inf";
+    if (timeout->QuadPart < 0) snprintf( buf, len, "%lldms", (long long)(-timeout->QuadPart / 10000) );
+    else snprintf( buf, len, "abs" );
+    return buf;
+}
+
+int ios_probe_has( const char *hay, const char *needle )
 {
     size_t n = strlen( needle );
     for (; *hay; hay++)
@@ -1973,6 +2046,12 @@ void ios_objprobe( const char *tag, const char *op, const OBJECT_ATTRIBUTES *att
     nb[k] = 0;
     special = ios_probe_has( nb, "steam" ) || ios_probe_has( nb, "valve" );
     if (tag[0] == 'r' && !special) return;   /* reg-probe: Steam/Valve keys only */
+    if (special && is_wow64() && ios_probe_has( nb, "steam3master" ) && !ios_steam_ipc_armed)
+    {
+        /* ml1161: a 32-bit process is starting Steam's create-pipe handshake. */
+        ios_steam_ipc_armed_at = monotonic_counter();
+        ios_steam_ipc_armed = 1;
+    }
     if (special) { if (ios_objprobe_steam_logged >= 400) return; ios_objprobe_steam_logged++; }
     else { if (ios_objprobe_logged >= 150) return; ios_objprobe_logged++; }
     dprintf( 2, "[%s] ml1160 pid=%04x tid=%04x wow=%d %s status=0x%08x root=%p attr=0x%x name=%s\n", tag,
@@ -1983,6 +2062,13 @@ void ios_objprobe( const char *tag, const char *op, const OBJECT_ATTRIBUTES *att
 #define IOS_OBJPROBE(op, attr, status) ios_objprobe( "obj-probe", op, attr, status )
 #else
 #define IOS_OBJPROBE(op, attr, status) ((void)0)
+#endif
+
+#ifdef WINE_IOS
+/* ml1161: the public entry point is a probe wrapper below the real body. */
+#define IOS_PROBE_DEF(name) static NTSTATUS WINAPI ios_inner_##name
+#else
+#define IOS_PROBE_DEF(name) NTSTATUS WINAPI name
 #endif
 
 
@@ -2115,7 +2201,7 @@ NTSTATUS WINAPI NtQuerySemaphore( HANDLE handle, SEMAPHORE_INFORMATION_CLASS cla
 /******************************************************************************
  *              NtReleaseSemaphore (NTDLL.@)
  */
-NTSTATUS WINAPI NtReleaseSemaphore( HANDLE handle, ULONG count, ULONG *previous )
+IOS_PROBE_DEF(NtReleaseSemaphore)( HANDLE handle, ULONG count, ULONG *previous )
 {
     unsigned int ret;
 #ifdef WINE_IOS
@@ -2155,6 +2241,20 @@ NTSTATUS WINAPI NtReleaseSemaphore( HANDLE handle, ULONG count, ULONG *previous 
     SERVER_END_REQ;
     return ret;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtReleaseSemaphore( HANDLE handle, ULONG count, ULONG *previous )
+{
+    NTSTATUS ret = ios_inner_NtReleaseSemaphore( handle, count, previous );
+    if (ios_ipcprobe_on( 0 ))
+    {
+        char d[160];
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( 0, "NtReleaseSemaphore h=%s count=%u status=0x%08x", d, count, (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
 
 
 /**************************************************************************
@@ -2283,7 +2383,7 @@ int madeira_get_eco(void) { ios_eco_init(); return ios_eco_on > 0; }
 #define IOS_ECO_POLL() do { } while (0)
 #endif
 
-NTSTATUS WINAPI NtSetEvent( HANDLE handle, LONG *prev_state )
+IOS_PROBE_DEF(NtSetEvent)( HANDLE handle, LONG *prev_state )
 {
     unsigned int ret;
     int op = SET_EVENT;
@@ -2320,6 +2420,20 @@ NTSTATUS WINAPI NtSetEvent( HANDLE handle, LONG *prev_state )
     SERVER_END_REQ;
     return ret;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtSetEvent( HANDLE handle, LONG *prev )
+{
+    NTSTATUS ret = ios_inner_NtSetEvent( handle, prev );
+    if (ios_ipcprobe_on( 0 ))
+    {
+        char d[160];
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( 0, "NtSetEvent h=%s status=0x%08x", d, (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
 
 
 /******************************************************************************
@@ -2374,7 +2488,7 @@ NTSTATUS WINAPI NtClearEvent( HANDLE handle )
 /******************************************************************************
  *              NtPulseEvent (NTDLL.@)
  */
-NTSTATUS WINAPI NtPulseEvent( HANDLE handle, LONG *prev_state )
+IOS_PROBE_DEF(NtPulseEvent)( HANDLE handle, LONG *prev_state )
 {
     unsigned int ret;
 
@@ -2394,6 +2508,20 @@ NTSTATUS WINAPI NtPulseEvent( HANDLE handle, LONG *prev_state )
     SERVER_END_REQ;
     return ret;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtPulseEvent( HANDLE handle, LONG *prev )
+{
+    NTSTATUS ret = ios_inner_NtPulseEvent( handle, prev );
+    if (ios_ipcprobe_on( 0 ))
+    {
+        char d[160];
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( 0, "NtPulseEvent h=%s status=0x%08x", d, (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
 
 
 /******************************************************************************
@@ -2499,7 +2627,7 @@ NTSTATUS WINAPI NtOpenMutant( HANDLE *handle, ACCESS_MASK access, const OBJECT_A
 /**************************************************************************
  *              NtReleaseMutant (NTDLL.@)
  */
-NTSTATUS WINAPI NtReleaseMutant( HANDLE handle, LONG *prev_count )
+IOS_PROBE_DEF(NtReleaseMutant)( HANDLE handle, LONG *prev_count )
 {
     unsigned int ret;
 
@@ -2517,6 +2645,20 @@ NTSTATUS WINAPI NtReleaseMutant( HANDLE handle, LONG *prev_count )
     SERVER_END_REQ;
     return ret;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtReleaseMutant( HANDLE handle, LONG *prev )
+{
+    NTSTATUS ret = ios_inner_NtReleaseMutant( handle, prev );
+    if (ios_ipcprobe_on( 0 ))
+    {
+        char d[160];
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( 0, "NtReleaseMutant h=%s status=0x%08x", d, (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
 
 
 /******************************************************************
@@ -3463,7 +3605,7 @@ NTSTATUS WINAPI NtQueryTimer( HANDLE handle, TIMER_INFORMATION_CLASS class,
 /******************************************************************
  *		NtWaitForMultipleObjects (NTDLL.@)
  */
-NTSTATUS WINAPI NtWaitForMultipleObjects( DWORD count, const HANDLE *handles, WAIT_TYPE type,
+IOS_PROBE_DEF(NtWaitForMultipleObjects)( DWORD count, const HANDLE *handles, WAIT_TYPE type,
                                           BOOLEAN alertable, const LARGE_INTEGER *timeout )
 {
     union select_op select_op;
@@ -3538,11 +3680,33 @@ NTSTATUS WINAPI NtWaitForMultipleObjects( DWORD count, const HANDLE *handles, WA
     return ret;
 }
 
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtWaitForMultipleObjects( DWORD count, const HANDLE *handles, WAIT_TYPE type,
+                                          BOOLEAN alertable, const LARGE_INTEGER *timeout )
+{
+    NTSTATUS ret = ios_inner_NtWaitForMultipleObjects( count, handles, type, alertable, timeout );
+    if ((!timeout || timeout->QuadPart) && count && count <= MAXIMUM_WAIT_OBJECTS && ios_ipcprobe_on( 0 ))
+    {
+        char d[3][160], t[32];
+        DWORD i;
+        for (i = 0; i < 3; i++)
+        {
+            if (i < count) ios_probe_desc( handles[i], d[i], sizeof(d[i]) );
+            else d[i][0] = 0;
+        }
+        ios_ipcprobe( 0, "NtWaitForMultipleObjects n=%u all=%d h=%s %s %s timeout=%s status=0x%08x",
+                      count, type == WaitAll, d[0], d[1], d[2],
+                      ios_probe_timeout( timeout, t, sizeof(t) ), (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
+
 
 /******************************************************************
  *		NtWaitForSingleObject (NTDLL.@)
  */
-NTSTATUS WINAPI NtWaitForSingleObject( HANDLE handle, BOOLEAN alertable, const LARGE_INTEGER *timeout )
+IOS_PROBE_DEF(NtWaitForSingleObject)( HANDLE handle, BOOLEAN alertable, const LARGE_INTEGER *timeout )
 {
     union select_op select_op;
     UINT flags = SELECT_INTERRUPTIBLE;
@@ -3599,11 +3763,26 @@ NTSTATUS WINAPI NtWaitForSingleObject( HANDLE handle, BOOLEAN alertable, const L
     return ret;
 }
 
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtWaitForSingleObject( HANDLE handle, BOOLEAN alertable, const LARGE_INTEGER *timeout )
+{
+    NTSTATUS ret = ios_inner_NtWaitForSingleObject( handle, alertable, timeout );
+    if ((!timeout || timeout->QuadPart) && ios_ipcprobe_on( 0 ))
+    {
+        char d[160], t[32];
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( 0, "NtWaitForSingleObject h=%s timeout=%s status=0x%08x", d,
+                      ios_probe_timeout( timeout, t, sizeof(t) ), (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
+
 
 /******************************************************************
  *		NtSignalAndWaitForSingleObject (NTDLL.@)
  */
-NTSTATUS WINAPI NtSignalAndWaitForSingleObject( HANDLE signal, HANDLE wait,
+IOS_PROBE_DEF(NtSignalAndWaitForSingleObject)( HANDLE signal, HANDLE wait,
                                                 BOOLEAN alertable, const LARGE_INTEGER *timeout )
 {
     union select_op select_op;
@@ -3623,6 +3802,23 @@ NTSTATUS WINAPI NtSignalAndWaitForSingleObject( HANDLE signal, HANDLE wait,
     select_op.signal_and_wait.signal = wine_server_obj_handle( signal );
     return server_wait( &select_op, sizeof(select_op.signal_and_wait), flags, timeout );
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtSignalAndWaitForSingleObject( HANDLE signal, HANDLE wait,
+                                                BOOLEAN alertable, const LARGE_INTEGER *timeout )
+{
+    NTSTATUS ret = ios_inner_NtSignalAndWaitForSingleObject( signal, wait, alertable, timeout );
+    if (ios_ipcprobe_on( 0 ))
+    {
+        char a[160], b[160], t[32];
+        ios_probe_desc( signal, a, sizeof(a) );
+        ios_probe_desc( wait, b, sizeof(b) );
+        ios_ipcprobe( 0, "NtSignalAndWaitForSingleObject signal=%s wait=%s timeout=%s status=0x%08x", a, b,
+                      ios_probe_timeout( timeout, t, sizeof(t) ), (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
 
 
 /******************************************************************
@@ -4306,6 +4502,9 @@ NTSTATUS WINAPI NtCreateSection( HANDLE *handle, ACCESS_MASK access, const OBJEC
 
     free( objattr );
     IOS_OBJPROBE( "NtCreateSection", attr, ret );
+#ifdef WINE_IOS
+    ios_secprobe_note( *handle, attr, ret );
+#endif
     return ret;
 }
 
@@ -4344,6 +4543,9 @@ NTSTATUS WINAPI NtOpenSection( HANDLE *handle, ACCESS_MASK access, const OBJECT_
     }
     SERVER_END_REQ;
     IOS_OBJPROBE( "NtOpenSection", attr, ret );
+#ifdef WINE_IOS
+    ios_secprobe_note( *handle, attr, ret );
+#endif
     return ret;
 }
 

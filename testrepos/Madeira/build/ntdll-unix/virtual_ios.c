@@ -23794,9 +23794,148 @@ NTSTATUS WINAPI NtMapViewOfSection( HANDLE handle, HANDLE process, PVOID *addr_p
         return result.map_view.status;
     }
 
+#ifdef WINE_IOS
+    {
+        unsigned int status = virtual_map_section( handle, addr_ptr, 0, get_zero_bits_limit( zero_bits ),
+                                                   commit_size, offset_ptr, size_ptr, alloc_type, protect, 0 );
+        ios_secprobe_map( handle, *addr_ptr, *size_ptr, status );
+        return status;
+    }
+#else
     return virtual_map_section( handle, addr_ptr, 0, get_zero_bits_limit( zero_bits ), commit_size,
                                 offset_ptr, size_ptr, alloc_type, protect, 0 );
+#endif
 }
+
+#ifdef WINE_IOS
+/* ml1161: views of Steam's named sections, across every pseudo-process.
+ *
+ * A 32-bit game's steamclient.dll opens Steam3Master_SharedMemFile, maps it,
+ * waits 5 s for the Dock's 64-bit engine and gives up ("create pipe failed").
+ * Pseudo-processes share this address space, so the game's view and the Dock's
+ * view of the same section can be compared directly: same bytes = the memory
+ * is shared and the request reached the Dock's view; different bytes = the two
+ * views are not the same memory. Reads go through mach_vm_read_overwrite, so a
+ * view that has gone away reports "unreadable" instead of faulting. */
+#define IOS_SECPROBE_SLOTS 48
+static struct { unsigned int pid; HANDLE handle; char name[64]; } ios_sec_handles[IOS_SECPROBE_SLOTS];
+static struct { unsigned int pid; int wow; char *base; SIZE_T size; char name[64]; } ios_sec_views[IOS_SECPROBE_SLOTS];
+static int ios_sec_handle_next, ios_sec_view_count, ios_secprobe_lines;
+static pthread_mutex_t ios_secprobe_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static unsigned int ios_secprobe_pid(void)
+{
+    return (unsigned int)HandleToULong( NtCurrentTeb()->ClientId.UniqueProcess );
+}
+
+void ios_secprobe_note( HANDLE handle, const OBJECT_ATTRIBUTES *attr, unsigned int status )
+{
+    char nb[64];
+    unsigned int k = 0, wl, i;
+    const WCHAR *w;
+
+    if (status || !handle || !attr || !attr->ObjectName || !attr->ObjectName->Buffer) return;
+    w = attr->ObjectName->Buffer;
+    wl = attr->ObjectName->Length / sizeof(WCHAR);
+    while (k < wl && k < sizeof(nb) - 1) { nb[k] = (w[k] < 32 || w[k] > 126) ? '?' : (char)w[k]; k++; }
+    nb[k] = 0;
+    /* only the handshake's sections, so other Steam shared memory cannot use up the slots */
+    if (!ios_probe_has( nb, "steam3master" ) && !ios_probe_has( nb, "steam_drm" ) && !ios_probe_has( nb, "dipc" )) return;
+    pthread_mutex_lock( &ios_secprobe_mutex );
+    for (i = 0; i < IOS_SECPROBE_SLOTS; i++)
+        if (ios_sec_handles[i].pid == ios_secprobe_pid() && ios_sec_handles[i].handle == handle) break;
+    if (i == IOS_SECPROBE_SLOTS) i = ios_sec_handle_next++ % IOS_SECPROBE_SLOTS;
+    ios_sec_handles[i].pid = ios_secprobe_pid();
+    ios_sec_handles[i].handle = handle;
+    memcpy( ios_sec_handles[i].name, nb, sizeof(nb) );
+    pthread_mutex_unlock( &ios_secprobe_mutex );
+}
+
+/* First 32 bytes in hex plus an FNV-1a hash of the first 4 KB (or the view, if smaller). */
+static void ios_secprobe_bytes( const char *base, SIZE_T size, char *out, size_t len )
+{
+    unsigned char buf[4096];
+    mach_vm_size_t got = 0, want = size < sizeof(buf) ? size : sizeof(buf);
+    unsigned int hash = 2166136261u, i, n = 0;
+
+    if (!want || mach_vm_read_overwrite( mach_task_self(), (mach_vm_address_t)base, want,
+                                         (mach_vm_address_t)buf, &got ) != KERN_SUCCESS || !got)
+    {
+        snprintf( out, len, "unreadable" );
+        return;
+    }
+    for (i = 0; i < got; i++) { hash ^= buf[i]; hash *= 16777619u; }
+    n = snprintf( out, len, "fnv=%08x len=0x%x bytes=", hash, (unsigned int)got );
+    for (i = 0; i < 32 && i < got && n + 3 < len; i++) n += snprintf( out + n, len - n, "%02x", buf[i] );
+}
+
+static void ios_secprobe_peers( int self, const char *what )
+{
+    char mine[160], theirs[160];
+    int i;
+
+    ios_secprobe_bytes( ios_sec_views[self].base, ios_sec_views[self].size, mine, sizeof(mine) );
+    dprintf( 2, "[sec-probe] ml1161 pid=%04x wow=%d %s name=%s base=%p size=0x%lx %s\n",
+             ios_sec_views[self].pid, ios_sec_views[self].wow, what, ios_sec_views[self].name,
+             ios_sec_views[self].base, (unsigned long)ios_sec_views[self].size, mine );
+    for (i = 0; i < IOS_SECPROBE_SLOTS; i++)
+    {
+        if (i == self || !ios_sec_views[i].base || strcmp( ios_sec_views[i].name, ios_sec_views[self].name )) continue;
+        ios_secprobe_bytes( ios_sec_views[i].base, ios_sec_views[i].size, theirs, sizeof(theirs) );
+        dprintf( 2, "[sec-probe] ml1161   peer pid=%04x wow=%d base=%p size=0x%lx %s same-first-4k=%d\n",
+                 ios_sec_views[i].pid, ios_sec_views[i].wow, ios_sec_views[i].base,
+                 (unsigned long)ios_sec_views[i].size, theirs,
+                 !strncmp( mine, theirs, 13 ) && ios_sec_views[i].size == ios_sec_views[self].size );
+    }
+}
+
+void ios_secprobe_map( HANDLE handle, void *base, SIZE_T size, unsigned int status )
+{
+    int i, slot = -1;
+
+    if (!ios_sec_handle_next) return;   /* no Steam section opened yet: the common case costs one load */
+    pthread_mutex_lock( &ios_secprobe_mutex );
+    for (i = 0; i < IOS_SECPROBE_SLOTS; i++)
+        if (ios_sec_handles[i].pid == ios_secprobe_pid() && ios_sec_handles[i].handle == handle) break;
+    if (i < IOS_SECPROBE_SLOTS && ios_secprobe_lines++ < 200)
+    {
+        if (status)
+            dprintf( 2, "[sec-probe] ml1161 pid=%04x wow=%d map name=%s status=0x%08x\n",
+                     ios_secprobe_pid(), (int)is_wow64(), ios_sec_handles[i].name, status );
+        else
+        {
+            int v;
+            for (v = 0; v < IOS_SECPROBE_SLOTS; v++) if (!ios_sec_views[v].base) { slot = v; break; }
+            if (slot < 0) slot = 0;
+            ios_sec_views[slot].pid = ios_secprobe_pid();
+            ios_sec_views[slot].wow = is_wow64();
+            ios_sec_views[slot].base = base;
+            ios_sec_views[slot].size = size;
+            memcpy( ios_sec_views[slot].name, ios_sec_handles[i].name, sizeof(ios_sec_views[slot].name) );
+            ios_sec_view_count++;
+            ios_secprobe_peers( slot, "map" );
+        }
+    }
+    pthread_mutex_unlock( &ios_secprobe_mutex );
+}
+
+void ios_secprobe_unmap( void *base )
+{
+    int i;
+
+    if (!ios_sec_view_count) return;
+    pthread_mutex_lock( &ios_secprobe_mutex );
+    for (i = 0; i < IOS_SECPROBE_SLOTS; i++)
+    {
+        if (ios_sec_views[i].base != base || ios_sec_views[i].pid != ios_secprobe_pid()) continue;
+        if (ios_secprobe_lines++ < 200) ios_secprobe_peers( i, "unmap" );
+        ios_sec_views[i].base = NULL;
+        ios_sec_view_count--;
+        break;
+    }
+    pthread_mutex_unlock( &ios_secprobe_mutex );
+}
+#endif
 
 /***********************************************************************
  *             NtMapViewOfSectionEx   (NTDLL.@)
@@ -23901,6 +24040,9 @@ static NTSTATUS unmap_view_of_section( HANDLE process, PVOID addr, ULONG flags )
         return status;
     }
 
+#ifdef WINE_IOS
+    ios_secprobe_unmap( addr );
+#endif
     server_enter_uninterrupted_section( &virtual_mutex, &sigset );
     if (!(view = find_view( addr, 0 )) || is_view_valloc( view )) goto done;
 

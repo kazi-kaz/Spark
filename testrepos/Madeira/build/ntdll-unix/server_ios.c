@@ -4470,10 +4470,17 @@ NTSTATUS WINAPI NtAllocateReserveObject( HANDLE *handle, const OBJECT_ATTRIBUTES
 }
 
 
+#ifdef WINE_IOS
+/* ml1161: the public entry point is a probe wrapper below the real body. */
+#define IOS_PROBE_DEF(name) static NTSTATUS WINAPI ios_inner_##name
+#else
+#define IOS_PROBE_DEF(name) NTSTATUS WINAPI name
+#endif
+
 /******************************************************************************
  *           NtDuplicateObject
  */
-NTSTATUS WINAPI NtDuplicateObject( HANDLE source_process, HANDLE source, HANDLE dest_process, HANDLE *dest,
+IOS_PROBE_DEF(NtDuplicateObject)( HANDLE source_process, HANDLE source, HANDLE dest_process, HANDLE *dest,
                                    ACCESS_MASK access, ULONG attributes, ULONG options )
 {
     sigset_t sigset;
@@ -4535,6 +4542,26 @@ NTSTATUS WINAPI NtDuplicateObject( HANDLE source_process, HANDLE source, HANDLE 
     if (fd != -1) close( fd );
     return ret;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtDuplicateObject( HANDLE source_process, HANDLE source, HANDLE dest_process, HANDLE *dest,
+                                   ACCESS_MASK access, ULONG attributes, ULONG options )
+{
+    NTSTATUS ret = ios_inner_NtDuplicateObject( source_process, source, dest_process, dest,
+                                                access, attributes, options );
+    int kind = is_wow64() ? 1 : 0;
+    if ((source_process != NtCurrentProcess() || dest_process != NtCurrentProcess()) && ios_ipcprobe_on( kind ))
+    {
+        char sp[160], dp[160], dd[160] = "-";
+        ios_probe_desc( source_process, sp, sizeof(sp) );
+        ios_probe_desc( dest_process, dp, sizeof(dp) );
+        if (!ret && dest && dest_process == NtCurrentProcess()) ios_probe_desc( *dest, dd, sizeof(dd) );
+        ios_ipcprobe( kind, "NtDuplicateObject src_process=%s src=%p dst_process=%s dst=%s access=0x%x options=0x%x status=0x%08x",
+                      sp, source, dp, dd, (unsigned int)access, (unsigned int)options, (unsigned int)ret );
+    }
+    return ret;
+}
+#endif
 
 
 /**************************************************************************

@@ -490,10 +490,38 @@ NTSTATUS WINAPI NtEnumerateValueKey( HANDLE handle, ULONG index, KEY_VALUE_INFOR
 }
 
 
+#ifdef WINE_IOS
+/* ml1161: the public entry point is a probe wrapper below the real body. */
+#define IOS_PROBE_DEF(name) static NTSTATUS WINAPI ios_inner_##name
+#else
+#define IOS_PROBE_DEF(name) NTSTATUS WINAPI name
+#endif
+
+#ifdef WINE_IOS
+/* ml1161: the Steam values a game's steamclient reads to find the running client. */
+static int ios_steam_value_name( const UNICODE_STRING *name )
+{
+    static const char *const names[] = { "pid", "ActiveUser", "SteamClientDll", "SteamClientDll64",
+        "SteamPath", "SteamExe", "Universe", "RunningAppID", "Language", "SteamPID" };
+    char nb[40];
+    unsigned int i, k, n = name->Length / sizeof(WCHAR);
+    if (!name->Buffer || n >= sizeof(nb)) return 0;
+    for (k = 0; k < n; k++) nb[k] = (name->Buffer[k] < 32 || name->Buffer[k] > 126) ? '?' : (char)name->Buffer[k];
+    nb[n] = 0;
+    for (i = 0; i < ARRAY_SIZE(names); i++)
+    {
+        const char *a = nb, *b = names[i];
+        while (*a && (*a | 0x20) == (*b | 0x20)) { a++; b++; }
+        if (!*a && !*b) return 1;
+    }
+    return 0;
+}
+#endif
+
 /******************************************************************************
  *              NtQueryValueKey  (NTDLL.@)
  */
-NTSTATUS WINAPI NtQueryValueKey( HANDLE handle, const UNICODE_STRING *name,
+IOS_PROBE_DEF(NtQueryValueKey)( HANDLE handle, const UNICODE_STRING *name,
                                  KEY_VALUE_INFORMATION_CLASS info_class,
                                  void *info, DWORD length, DWORD *result_len )
 {
@@ -562,6 +590,48 @@ NTSTATUS WINAPI NtQueryValueKey( HANDLE handle, const UNICODE_STRING *name,
     SERVER_END_REQ;
     return ret;
 }
+
+#ifdef WINE_IOS
+NTSTATUS WINAPI NtQueryValueKey( HANDLE handle, const UNICODE_STRING *name,
+                                 KEY_VALUE_INFORMATION_CLASS info_class,
+                                 void *info, DWORD length, DWORD *result_len )
+{
+    NTSTATUS ret = ios_inner_NtQueryValueKey( handle, name, info_class, info, length, result_len );
+    if (name && ios_ipcprobe_on( 1 ) && ios_steam_value_name( name ))
+    {
+        char nb[40], val[200] = "", d[160];
+        const UCHAR *data = NULL;
+        ULONG type = 0, size = 0;
+        unsigned int k;
+
+        for (k = 0; k < name->Length / sizeof(WCHAR) && k < sizeof(nb) - 1; k++) nb[k] = (char)name->Buffer[k];
+        nb[k] = 0;
+        if (!ret && info_class == KeyValuePartialInformation)
+        {
+            KEY_VALUE_PARTIAL_INFORMATION *pi = info;
+            type = pi->Type; size = pi->DataLength; data = pi->Data;
+        }
+        else if (!ret && info_class == KeyValueFullInformation)
+        {
+            KEY_VALUE_FULL_INFORMATION *fi = info;
+            type = fi->Type; size = fi->DataLength; data = (const UCHAR *)fi + fi->DataOffset;
+        }
+        if (data && type == REG_DWORD && size >= 4) snprintf( val, sizeof(val), "dword=0x%x", *(const DWORD *)data );
+        else if (data && (type == REG_SZ || type == REG_EXPAND_SZ))
+        {
+            const WCHAR *w = (const WCHAR *)data;
+            unsigned int n = size / sizeof(WCHAR);
+            for (k = 0; k < n && k < sizeof(val) - 5 && w[k]; k++) val[k + 4] = (w[k] < 32 || w[k] > 126) ? '?' : (char)w[k];
+            memcpy( val, "sz=\"", 4 );
+            val[k + 4] = 0;
+        }
+        ios_probe_desc( handle, d, sizeof(d) );
+        ios_ipcprobe( 1, "NtQueryValueKey key=%s value=%s class=%d status=0x%08x type=%u size=%u %s",
+                      d, nb, (int)info_class, (unsigned int)ret, (unsigned int)type, (unsigned int)size, val );
+    }
+    return ret;
+}
+#endif
 
 
 /******************************************************************************

@@ -172,7 +172,9 @@ block = between(sync, '#ifdef WINE_IOS\n\n/*************************************
 check('#include "wine/madeira_fastsync.h"' in block, 'the client block is iOS-only and uses the shared header')
 for name in ['NtSetEvent', 'NtResetEvent', 'NtReleaseSemaphore', 'NtQuerySemaphore',
              'NtWaitForSingleObject', 'NtWaitForMultipleObjects']:
-    body = between(sync, f'NTSTATUS WINAPI {name}(', '\n}\n')
+    # ml1161: an instrumented function's body is IOS_PROBE_DEF(name), below its probe wrapper's name
+    header = f'IOS_PROBE_DEF({name})(' if f'IOS_PROBE_DEF({name})(' in sync else f'NTSTATUS WINAPI {name}('
+    body = between(sync, header, '\n}\n')
     calls = [m.start() for m in re.finditer(r'madeira_fast\w*\(', body)]
     ok = bool(calls)
     for pos in calls:

@@ -447,6 +447,24 @@ dockhost's engine waits on `STEAM_DIPC_CONSUME` at count 0 for the whole launch;
 full trace slows the Dock so much that the game never starts, so this is how to see
 what the 32-bit client opens.
 
+`[ipc-probe]` and `[sec-probe]` (ml1161) follow that handshake further. With the
+named objects all opening, Half-Life's client maps `Steam3Master_SharedMemFile`,
+waits exactly 5 s, unmaps it and fails, and never touches `STEAM_DIPC_CONSUME`.
+`[ipc-probe]` logs, from 32-bit processes, `NtOpenProcess`,
+`NtQueryInformationProcess` on another process, `NtDuplicateObject` across
+processes and the Steam discovery registry values (`pid`, `ActiveUser`,
+`SteamClientDll`...) with their data. Once a 32-bit process opens a Steam3Master
+object it also logs that process's event, semaphore and mutex signals and its
+waits (with each handle's type and name and the wait's result), and for 8 s
+the same calls from 64-bit processes, to show whether the Dock reacts.
+`[sec-probe]` records every view of the handshake's sections in any
+pseudo-process and, when one is mapped or unmapped, prints its first bytes and a
+hash beside every other view of the same section: pseudo-processes share one
+address space, so this shows directly whether the game's view and the Dock's
+view are the same memory. The probes are wrappers around the unchanged function
+bodies (`IOS_PROBE_DEF`, checked by `check-ipc-probes.py`), bounded, and silent
+until a 32-bit process takes part in a Steam handshake.
+
 ## Truncated 32-bit stack pointers
 
 `signal_arm64_ios.c` recovers a stack pointer that a game keeps in a 32-bit
