@@ -175,6 +175,14 @@ import Foundation
         precondition(try String(contentsOf: prefix.appendingPathComponent("user.reg"), encoding: .utf8) == edited)
         precondition(try String(contentsOf: prefix.appendingPathComponent("system.reg"), encoding: .utf8).contains("InstallPath"))
         precondition(try Data(contentsOf: drive.appendingPathComponent("IridiumPrerequisites/dockhost.exe")) == Data("MZ host".utf8))
+        // A "Update Required" record the client wrote for Steamworks Common Redistributables
+        // makes LaunchApp fail with error 17, so it is removed at each launch.
+        let stale = steam.appendingPathComponent("steamapps/appmanifest_228980.acf")
+        try Data("\"AppState\"\n{\n\t\"appid\"\t\t\"228980\"\n\t\"StateFlags\"\t\t\"2\"\n}\n".utf8).write(to: stale)
+        _ = try MadeiraSteamDock.preparePrefix(prefix: prefix, appID: 480, name: "Spacewar", receipt: receipt,
+                                               steamID: steamID, store: store, host: host, client: client)
+        precondition(!fm.fileExists(atPath: stale.path))
+        precondition(fm.fileExists(atPath: steam.appendingPathComponent("steamapps/appmanifest_480.acf").path))
         // A different client build in the environment is never driven.
         try Data("other".utf8).write(to: steam.appendingPathComponent("steamclient64.dll"))
         expectFailure("unverified client") {

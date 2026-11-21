@@ -115,6 +115,8 @@ enum MadeiraSteamDock {
     static let relativeRoot = "Program Files (x86)/Steam"
     static let windowsRoot = "C:\\Program Files (x86)\\Steam"
     static let readyMarker = "iridium-dock-ready.txt"
+    /// Shared apps whose client-written records block LaunchApp: Steamworks Common Redistributables.
+    static let sharedAppIDs = [228980]
 
     static func supportFolder() -> URL? {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
@@ -367,6 +369,16 @@ enum MadeiraSteamDock {
         let recordFile = steamapps.appendingPathComponent("appmanifest_\(appID).acf")
         try requireUnlinkedPath(recordFile, under: prefix)
         try Data(record.utf8).write(to: recordFile, options: .atomic)
+        // Valve's client adds a record for Steamworks Common Redistributables (228980) after
+        // a run, marked "Update Required". The next LaunchApp then fails with error 17
+        // ("required app 228980 not ready") and nothing downloads it here. Spark installs
+        // redistributables through its own prerequisites step, so the record is dropped
+        // and the client starts as it did before the record existed.
+        for sharedID in Self.sharedAppIDs where sharedID != appID {
+            let sharedRecord = steamapps.appendingPathComponent("appmanifest_\(sharedID).acf")
+            try requireUnlinkedPath(sharedRecord, under: prefix)
+            if fm.fileExists(atPath: sharedRecord.path) { try fm.removeItem(at: sharedRecord) }
+        }
 
         // Client discovery for Valve's client and the game's steam_api.
         for (file, machine) in [("system.reg", true), ("user.reg", false)] {
